@@ -4,22 +4,28 @@ WatchRadar is a private dashboard for Jellyfin circles. Authorized users can
 see what friends and family are watching, their in-progress media, and their
 history while respecting each person's sharing preferences.
 
+Production installation uses prebuilt images from GitHub Container Registry.
+You only need a Docker Compose file and an `.env` file: cloning the repository
+is not required.
+
 ## Table of contents
 
 - [Features](#features)
 - [Architecture](#architecture)
 - [Docker installation](#docker-installation)
   - [1. Check the requirements](#1-check-the-requirements)
-  - [2. Download WatchRadar](#2-download-watchradar)
-  - [3. Run the setup assistant](#3-run-the-setup-assistant)
-  - [4. Verify the containers](#4-verify-the-containers)
+  - [2. Download the two deployment files](#2-download-the-two-deployment-files)
+  - [3. Configure the environment](#3-configure-the-environment)
+  - [4. Start WatchRadar](#4-start-watchradar)
   - [5. Configure Nginx Proxy Manager](#5-configure-nginx-proxy-manager)
   - [6. Complete the first-run setup](#6-complete-the-first-run-setup)
+- [Updating](#updating)
 - [Reverse proxy](#reverse-proxy)
 - [Persistent sessions](#persistent-sessions)
 - [Languages](#languages)
-- [Main configuration](#main-configuration)
+- [Configuration](#configuration)
 - [Common commands](#common-commands)
+- [Publishing container images](#publishing-container-images)
 - [Local development](#local-development)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
@@ -60,96 +66,95 @@ certificate installed on your reverse proxy.
 
 ## Docker installation
 
-This is the recommended installation path for a new server. WatchRadar runs as
-three containers: the web entrypoint, the private API, and PostgreSQL.
+This is the recommended path for a server. It pulls the prebuilt WatchRadar
+images and does not download the source code.
 
 ### 1. Check the requirements
 
 The server needs:
 
-- Git
-- Bash and OpenSSL
-- Docker Engine
-- Docker Compose v2 (`docker compose`) or standalone Compose (`docker-compose`)
+- Docker Engine and Docker Compose v2 (`docker compose`)
+- `curl` and OpenSSL
 - A domain such as `watchradar.example.com`
 - A reverse proxy that provides HTTPS
 - A Jellyfin server reachable over HTTPS from Docker
 
 Point the domain to your reverse proxy before continuing.
 
-### 2. Download WatchRadar
+### 2. Download the two deployment files
 
 ```bash
-git clone https://github.com/garnajee/watchradar.git
+mkdir watchradar
 cd watchradar
+
+curl -fsSL \
+  https://raw.githubusercontent.com/garnajee/watchradar/main/docker-compose.prod.yml \
+  -o docker-compose.yml
+
+curl -fsSL \
+  https://raw.githubusercontent.com/garnajee/watchradar/main/.env.production.example \
+  -o .env
+
+chmod 600 .env
 ```
 
-### 3. Run the setup assistant
+The directory now contains everything required for deployment:
 
-The easiest option is the interactive assistant:
-
-```bash
-./scripts/setup.sh
+```text
+watchradar/
+├── docker-compose.yml
+└── .env
 ```
 
-It asks for:
+### 3. Configure the environment
 
-- the public WatchRadar URL, for example
-  `https://watchradar.example.com`;
-- the Jellyfin HTTPS URL reachable from the backend container;
-- the address and port exposed to the reverse proxy;
-- whether the Docker containers should start immediately.
-
-The assistant then:
-
-- generates strong database, JWT, and encryption secrets;
-- creates the single `.env` file at the project root with `0600` permissions;
-- validates the Docker Compose configuration;
-- builds and starts WatchRadar when requested;
-- prints the HTTP upstream to use in the reverse proxy.
-
-If you choose not to start the containers during setup, start them later with:
+Generate the four independent secrets:
 
 ```bash
-docker compose up -d --build
+sed -i \
+  -e "s/CHANGE_ME_DB_PASSWORD/$(openssl rand -hex 32)/" \
+  -e "s/CHANGE_ME_JWT_SECRET/$(openssl rand -hex 32)/" \
+  -e "s/CHANGE_ME_JWT_REFRESH_SECRET/$(openssl rand -hex 32)/" \
+  -e "s/CHANGE_ME_ENCRYPTION_KEY/$(openssl rand -hex 32)/" \
+  .env
 ```
 
-For a fully automated installation with a containerized reverse proxy such as
-Nginx Proxy Manager:
+Then open `.env` in an editor and set:
+
+- `FRONTEND_ORIGIN` to the public HTTPS URL, without a trailing slash;
+- `JELLYFIN_URL` to the HTTPS URL reachable from the backend container;
+- `WATCHRADAR_BIND_ADDRESS` to the address your reverse proxy can reach.
+
+Use `127.0.0.1` when the reverse proxy runs directly on the same host. Keep
+`0.0.0.0` for a containerized proxy such as Nginx Proxy Manager, and restrict
+port `8080` to trusted hosts with the server firewall.
+
+Back up `.env`. In particular, never regenerate `ENCRYPTION_KEY` after setup:
+changing it would make the stored Jellyfin API key unreadable.
+
+### 4. Start WatchRadar
 
 ```bash
-./scripts/setup.sh \
-  --public-url https://watchradar.example.com \
-  --jellyfin-url https://jellyfin.example.com \
-  --bind-address 0.0.0.0 \
-  --port 8080 \
-  --start \
-  --non-interactive
-```
-
-Use `--bind-address 127.0.0.1` instead when the reverse proxy runs directly on
-the same host and is not inside a container.
-
-Existing valid secrets are reused when the script runs again.
-`ENCRYPTION_KEY` is never rotated automatically because it protects the
-Jellyfin API key stored in PostgreSQL.
-
-### 4. Verify the containers
-
-```bash
+docker compose pull
+docker compose up -d
 docker compose ps
+```
+
+Verify the HTTP entrypoint:
+
+```bash
 curl http://127.0.0.1:8080/api/health
 ```
 
-The three services should be running, the database and backend should be
-healthy, and the health endpoint should return:
+It should return:
 
 ```json
 {"status":"ok","service":"watchradar-api"}
 ```
 
-If your system uses standalone Compose, replace `docker compose` with
-`docker-compose`.
+Only the frontend port is published. The backend and PostgreSQL remain private
+inside the Compose network. Database migrations run automatically when the
+backend starts.
 
 ### 5. Configure Nginx Proxy Manager
 
@@ -162,10 +167,9 @@ Create a new **Proxy Host**:
 | Forward Hostname / IP | IP address of the WatchRadar Docker host |
 | Forward Port | `8080` |
 
-When Nginx Proxy Manager itself runs in Docker, do not use `127.0.0.1` as the
-forward hostname: that address points back to the NPM container. Use the
-WatchRadar host's LAN address or connect both projects to a shared Docker
-network.
+When Nginx Proxy Manager runs in Docker, do not use `127.0.0.1` as the forward
+hostname: that address points back to the NPM container. Use the WatchRadar
+host's LAN address or connect both projects to a shared Docker network.
 
 In the **SSL** tab:
 
@@ -184,12 +188,9 @@ proxy_read_timeout 3600s;
 proxy_send_timeout 3600s;
 ```
 
-Only the reverse proxy should be allowed to reach port `8080`. Restrict it with
-the server firewall when it is bound to `0.0.0.0`.
-
-> Port `8080` serves plain HTTP for the reverse proxy. Do not open
-> `https://server-ip:8080`. For normal use and authentication, always open the
-> public HTTPS URL configured as `FRONTEND_ORIGIN`.
+Port `8080` serves plain HTTP for the reverse proxy. Do not open
+`https://server-ip:8080`; use the public HTTPS URL configured in
+`FRONTEND_ORIGIN`.
 
 ### 6. Complete the first-run setup
 
@@ -204,10 +205,26 @@ the server firewall when it is bound to `0.0.0.0`.
 The Jellyfin password is never stored. The API key is encrypted server-side and
 is never returned to the browser.
 
+## Updating
+
+The default `WATCHRADAR_VERSION=latest` tracks the most recent image published
+from `main`. To update:
+
+```bash
+cd watchradar
+docker compose pull
+docker compose up -d
+docker compose ps
+```
+
+To pin an installation, set `WATCHRADAR_VERSION` to a published release tag,
+for example `1.2.0`, before pulling. Keep the existing `.env` and
+`postgres_data` volume during updates.
+
 ## Reverse proxy
 
-Forward the entire domain to the same WatchRadar upstream. The included Nginx
-instance already routes `/api` to the private backend.
+Forward the entire domain to the same WatchRadar upstream. The Nginx instance
+inside the frontend image already routes `/api` to the private backend.
 
 Caddy example:
 
@@ -231,12 +248,7 @@ location / {
 }
 ```
 
-`proxy_buffering off` and the long timeout are required for the real-time SSE
-stream.
-
-Keep `WATCHRADAR_BIND_ADDRESS=127.0.0.1` when the reverse proxy runs directly
-on the same host. For a containerized or remote proxy, use `0.0.0.0` and limit
-the port to a trusted network with your firewall.
+`proxy_buffering off` and the long timeout preserve the real-time SSE stream.
 
 ## Persistent sessions
 
@@ -264,34 +276,36 @@ frontend/src/locales/en.json
 frontend/src/locales/fr.json
 ```
 
-Both dictionaries must contain the same keys; the automated tests enforce this.
+Both dictionaries must contain the same keys; automated tests enforce this.
 
-## Main configuration
+## Configuration
 
 | Variable | Purpose |
 |---|---|
+| `WATCHRADAR_VERSION` | GHCR image tag; defaults to `latest` |
 | `FRONTEND_ORIGIN` | Public HTTPS origin without a trailing slash |
-| `JELLYFIN_URL` | Jellyfin HTTPS URL reachable from the backend container |
-| `WATCHRADAR_BIND_ADDRESS` | HTTP bind address; use `127.0.0.1` when possible |
-| `WATCHRADAR_HTTP_PORT` | Reverse-proxy upstream port; defaults to `8080` |
+| `JELLYFIN_URL` | Jellyfin HTTPS URL reachable from the backend |
+| `WATCHRADAR_BIND_ADDRESS` | HTTP bind address for the reverse proxy |
+| `WATCHRADAR_HTTP_PORT` | HTTP port; defaults to `8080` |
 | `JELLYFIN_TLS_REJECT_UNAUTHORIZED` | Jellyfin certificate validation; keep `true` in production |
 
-Every variable is documented in [.env.example](.env.example).
-
-Do not use `https://localhost:8096` for Jellyfin from Docker:
-`localhost` would refer to the backend container itself.
+The production variables are documented in
+[.env.production.example](.env.production.example). Source builds and local
+development use the broader [.env.example](.env.example).
 
 ## Common commands
+
+Run these commands from the deployment directory:
 
 ```bash
 docker compose ps
 docker compose logs -f backend frontend
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 docker compose down
 ```
 
-PostgreSQL data is stored in the `postgres_data` volume. Prisma migrations are
-applied automatically when the backend starts.
+PostgreSQL data is stored in the `postgres_data` volume.
 
 Database backup:
 
@@ -299,10 +313,44 @@ Database backup:
 docker compose exec -T db pg_dump -U watchradar watchradar > watchradar.sql
 ```
 
+## Publishing container images
+
+The
+[`Publish container images`](.github/workflows/publish-container-images.yml)
+workflow publishes the frontend and backend images to GHCR for `linux/amd64`
+and `linux/arm64`:
+
+- every push to `main` publishes `latest` and a commit tag;
+- a Git tag such as `v1.2.0` publishes versioned tags;
+- the workflow can also be started manually.
+
+Images:
+
+- `ghcr.io/garnajee/watchradar-frontend`
+- `ghcr.io/garnajee/watchradar-backend`
+
+GitHub creates new packages as private by default. After the first successful
+workflow run, the repository owner must open each package's **Package
+settings → Change visibility → Public**. Public GHCR images can then be pulled
+anonymously; users do not need a GitHub account or `docker login`.
+
+The root [`docker-compose.yml`](docker-compose.yml) intentionally keeps its
+`build` sections for source builds and local development. Production servers
+should use [`docker-compose.prod.yml`](docker-compose.prod.yml).
+
 ## Local development
 
-Node.js 24 or newer is required. Local development also uses only the root
-`.env` file:
+Node.js 24 or newer is required. Clone the repository only when developing or
+building the images locally:
+
+```bash
+git clone https://github.com/garnajee/watchradar.git
+cd watchradar
+cp .env.example .env
+```
+
+Edit the root `.env`, keeping `DB_PASSWORD`, `DB_PASSWORD_URLENCODED`, and
+`DATABASE_URL` consistent. Then run:
 
 ```bash
 npm install
@@ -314,22 +362,29 @@ npm run dev
 React is available at `http://localhost:5173`; Vite forwards `/api` to the
 local backend.
 
-Run the full validation suite with:
+For a source-built Docker deployment, `./scripts/setup.sh` can generate the
+root `.env` and start the build-based Compose stack.
+
+Run the validation suite with:
 
 ```bash
 npm run typecheck
 npm test
 npm run build
 docker compose config
+docker compose -f docker-compose.prod.yml config
 ```
 
 ## Troubleshooting
 
-- Health endpoint: `https://your-domain.example/api/health`
+- `denied` while pulling from GHCR: both packages must be public.
+- `SSL_ERROR_RX_RECORD_TOO_LONG` on port `8080`: use `http://` for the internal
+  port, not `https://`.
+- `The request origin is not allowed`: `FRONTEND_ORIGIN` must exactly match the
+  URL shown in the browser.
 - Offline dashboard: check the Jellyfin URL, API key, and TLS certificate.
-- Unstable live updates: disable reverse-proxy buffering and increase its
-  read timeout.
-- CORS errors: `FRONTEND_ORIGIN` must exactly match the public HTTPS origin.
+- Unstable live updates: disable reverse-proxy buffering and increase its read
+  timeout.
 
 ## License
 
