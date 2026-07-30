@@ -4,6 +4,20 @@ WatchRadar is a private dashboard for Jellyfin circles. Authorized users can
 see what friends and family are watching, their in-progress media, and their
 history while respecting each person's sharing preferences.
 
+## Table of contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Reverse proxy](#reverse-proxy)
+- [Persistent sessions](#persistent-sessions)
+- [Languages](#languages)
+- [Main configuration](#main-configuration)
+- [Common commands](#common-commands)
+- [Local development](#local-development)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
 ## Features
 
 - Sign in with a Jellyfin account
