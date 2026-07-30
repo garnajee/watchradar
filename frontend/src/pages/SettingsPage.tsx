@@ -1,49 +1,23 @@
-import { Check, Eye, EyeOff, Globe2, ListChecks, Search } from "lucide-react";
+import { Check, Eye, EyeOff, Globe2, Languages, ListChecks, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MediaImage } from "../components/MediaImage";
+import { useAuth } from "../context/AuthContext";
+import { useI18n } from "../context/I18nContext";
 import { apiFetch } from "../lib/api";
-import type { LibraryItem, ShareMode, SharedItem } from "../types";
-
-const modes: Array<{
-  value: ShareMode;
-  title: string;
-  description: string;
-  icon: typeof Globe2;
-}> = [
-  {
-    value: "ALL",
-    title: "Tout partager",
-    description: "Direct, À suivre, reprises et historique des films et séries.",
-    icon: Globe2
-  },
-  {
-    value: "ONLY_WATCHING",
-    title: "Uniquement en direct",
-    description: "Seul le titre actuellement regardé est visible.",
-    icon: Eye
-  },
-  {
-    value: "SELECTED",
-    title: "Certains titres",
-    description: "Direct et historique uniquement pour les films et séries choisis.",
-    icon: ListChecks
-  },
-  {
-    value: "NONE",
-    title: "Rien du tout",
-    description: "Votre activité reste entièrement privée.",
-    icon: EyeOff
-  }
-];
+import { localizedError } from "../lib/error-message";
+import type { TranslationKey } from "../lib/i18n";
+import type { LibraryItem, Locale, ShareMode, SharedItem } from "../types";
 
 export function SettingsPage() {
+  const { user, updateLocale } = useAuth();
+  const { locale, t } = useI18n();
   const [mode, setMode] = useState<ShareMode>("ONLY_WATCHING");
   const [sharedItems, setSharedItems] = useState<SharedItem[]>([]);
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyItem, setBusyItem] = useState<string | null>(null);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<TranslationKey | null>(null);
   const [error, setError] = useState("");
   const noticeTimer = useRef<number | null>(null);
 
@@ -55,14 +29,16 @@ export function SettingsPage() {
   );
 
   useEffect(() => {
-    void apiFetch<{ shareMode: ShareMode; sharedItems: SharedItem[] }>("/user/preferences")
+    void apiFetch<{ shareMode: ShareMode; locale: Locale; sharedItems: SharedItem[] }>(
+      "/user/preferences"
+    )
       .then((payload) => {
         setMode(payload.shareMode);
         setSharedItems(payload.sharedItems);
       })
-      .catch((caught) => setError(caught instanceof Error ? caught.message : "Chargement impossible."))
+      .catch((caught) => setError(localizedError(caught, t, "errors.loadFailed")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (mode !== "SELECTED") return;
@@ -77,7 +53,7 @@ export function SettingsPage() {
         })
         .catch((caught) => {
           if (!controller.signal.aborted) {
-            setError(caught instanceof Error ? caught.message : "Catalogue indisponible.");
+            setError(localizedError(caught, t, "errors.catalogUnavailable"));
           }
         });
     }, 300);
@@ -85,7 +61,44 @@ export function SettingsPage() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [mode, search]);
+  }, [mode, search, t]);
+
+  const modes = useMemo<
+    Array<{
+      value: ShareMode;
+      title: string;
+      description: string;
+      icon: typeof Globe2;
+    }>
+  >(
+    () => [
+      {
+        value: "ALL",
+        title: t("settings.modes.all.title"),
+        description: t("settings.modes.all.description"),
+        icon: Globe2
+      },
+      {
+        value: "ONLY_WATCHING",
+        title: t("settings.modes.watching.title"),
+        description: t("settings.modes.watching.description"),
+        icon: Eye
+      },
+      {
+        value: "SELECTED",
+        title: t("settings.modes.selected.title"),
+        description: t("settings.modes.selected.description"),
+        icon: ListChecks
+      },
+      {
+        value: "NONE",
+        title: t("settings.modes.none.title"),
+        description: t("settings.modes.none.description"),
+        icon: EyeOff
+      }
+    ],
+    [t]
+  );
 
   const selectedIds = useMemo(
     () => new Set(sharedItems.map((item) => item.jellyfinItemId)),
@@ -101,12 +114,25 @@ export function SettingsPage() {
         method: "PUT",
         body: JSON.stringify({ shareMode: nextMode })
       });
-      setNotice("Préférence enregistrée.");
+      setNotice("settings.preferenceSaved");
       if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
-      noticeTimer.current = window.setTimeout(() => setNotice(""), 2400);
+      noticeTimer.current = window.setTimeout(() => setNotice(null), 2400);
     } catch (caught) {
       setMode(previous);
-      setError(caught instanceof Error ? caught.message : "Enregistrement impossible.");
+      setError(localizedError(caught, t, "errors.saveFailed"));
+    }
+  }
+
+  async function chooseLocale(nextLocale: Locale) {
+    if (nextLocale === locale) return;
+    setError("");
+    try {
+      await updateLocale(nextLocale);
+      setNotice("settings.language.saved");
+      if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
+      noticeTimer.current = window.setTimeout(() => setNotice(null), 2400);
+    } catch (caught) {
+      setError(localizedError(caught, t, "errors.saveFailed"));
     }
   }
 
@@ -140,7 +166,7 @@ export function SettingsPage() {
           : current.filter((entry) => entry.jellyfinItemId !== item.id)
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Modification impossible.");
+      setError(localizedError(caught, t, "errors.updateFailed"));
     } finally {
       setBusyItem(null);
     }
@@ -148,11 +174,12 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-7 sm:px-7 lg:px-10 lg:py-10">
-      <p className="eyebrow">Confidentialité</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Mon partage</h1>
+      <p className="eyebrow">{t("settings.eyebrow")}</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+        {t("settings.title")}
+      </h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-        L'administrateur décide qui peut vous voir. Vous gardez toujours le dernier mot sur ce que
-        ces personnes voient.
+        {t("settings.description")}
       </p>
 
       {error && (
@@ -163,12 +190,41 @@ export function SettingsPage() {
       {notice && (
         <div className="mt-6 flex items-center gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
           <Check className="h-4 w-4" />
-          {notice}
+          {t(notice)}
         </div>
       )}
 
+      <section className="card mt-8 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="flex items-start gap-4">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan/10 text-cyan">
+            <Languages className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="font-semibold text-white">
+              {t("settings.language.title")}
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              {t("settings.language.description")}
+            </p>
+          </div>
+        </div>
+        <label className="block sm:w-52">
+          <span className="sr-only">{t("settings.language.label")}</span>
+          <select
+            className="input"
+            value={user?.locale ?? locale}
+            onChange={(event) => void chooseLocale(event.target.value as Locale)}
+          >
+            <option value="en">{t("settings.language.english")}</option>
+            <option value="fr">{t("settings.language.french")}</option>
+          </select>
+        </label>
+      </section>
+
       <section className="mt-8">
-        <h2 className="mb-4 text-lg font-semibold text-white">Ce que je partage</h2>
+        <h2 className="mb-4 text-lg font-semibold text-white">
+          {t("settings.sharingTitle")}
+        </h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {modes.map((entry) => {
             const Icon = entry.icon;
@@ -211,14 +267,23 @@ export function SettingsPage() {
         <section className="mt-10">
           <div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
-              <h2 className="text-lg font-semibold text-white">Titres autorisés</h2>
-              <p className="mt-1 text-sm text-muted">{sharedItems.length} sélectionné(s)</p>
+              <h2 className="text-lg font-semibold text-white">
+                {t("settings.allowedTitles")}
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                {t(
+                  sharedItems.length === 1
+                    ? "common.counts.selectedOne"
+                    : "common.counts.selectedOther",
+                  { count: sharedItems.length }
+                )}
+              </p>
             </div>
             <label className="relative block sm:w-72">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
               <input
                 className="input pl-11"
-                placeholder="Rechercher…"
+                placeholder={t("common.search")}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -258,7 +323,9 @@ export function SettingsPage() {
                   <span className="block p-3">
                     <span className="block truncate text-sm font-medium text-white">{item.name}</span>
                     <span className="mt-1 block text-xs text-muted">
-                      {item.type === "Movie" ? "Film" : "Série"}
+                      {item.type === "Movie"
+                        ? t("common.movie")
+                        : t("common.series")}
                     </span>
                   </span>
                 </button>

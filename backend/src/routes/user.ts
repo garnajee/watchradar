@@ -11,6 +11,9 @@ import { jellyfinReadLimiter } from "../middleware/rate-limiters.js";
 const modeSchema = z.object({
   shareMode: z.enum(["ALL", "NONE", "ONLY_WATCHING", "SELECTED"])
 });
+const localeSchema = z.object({
+  locale: z.enum(["en", "fr"])
+});
 const sharedItemSchema = z.object({
   jellyfinItemId: z.string().min(1).max(100),
   itemType: z.enum(["Movie", "Series"]),
@@ -31,6 +34,7 @@ userRouter.get(
     });
     response.json({
       shareMode: user.sharingPreference?.shareMode ?? "ONLY_WATCHING",
+      locale: user.locale,
       sharedItems: user.sharedItems
     });
   })
@@ -46,6 +50,19 @@ userRouter.put(
       update: { shareMode: body.shareMode }
     });
     response.json({ shareMode: preference.shareMode });
+  })
+);
+
+userRouter.put(
+  "/locale",
+  asyncHandler(async (request, response) => {
+    const body = localeSchema.parse(request.body);
+    const user = await prisma.siteUser.update({
+      where: { id: request.auth!.userId },
+      data: { locale: body.locale },
+      select: { locale: true }
+    });
+    response.json(user);
   })
 );
 

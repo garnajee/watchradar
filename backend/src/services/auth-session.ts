@@ -12,6 +12,7 @@ const sessionUserSelect = {
   name: true,
   jellyfinUserId: true,
   avatarTag: true,
+  locale: true,
   isAdmin: true,
   isEnabled: true
 } satisfies Prisma.SiteUserSelect;

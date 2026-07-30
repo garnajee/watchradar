@@ -1,6 +1,7 @@
 import { Gauge, LogOut, Radar, Settings, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useI18n } from "../context/I18nContext";
 import { Link, useRouter } from "../context/RouterContext";
 import { Avatar } from "./Avatar";
 
@@ -31,6 +32,7 @@ function NavItem({
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
+  const { t } = useI18n();
   if (!user) return null;
 
   return (
@@ -46,23 +48,27 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <Radar className="h-5 w-5 text-white" />
           </span>
           <div>
-            <p className="font-semibold tracking-tight text-white">WatchRadar</p>
-            <p className="text-[11px] uppercase tracking-[.24em] text-muted">Jellyfin circle</p>
+            <p className="font-semibold tracking-tight text-white">
+              {t("common.productName")}
+            </p>
+            <p className="text-[11px] uppercase tracking-[.24em] text-muted">
+              {t("common.jellyfinCircle")}
+            </p>
           </div>
         </div>
-        <nav className="mt-10 space-y-2" aria-label="Navigation principale">
+        <nav className="mt-10 space-y-2" aria-label={t("navigation.primaryLabel")}>
           <NavItem to="/" exact>
             <Gauge className="h-5 w-5" />
-            Activité
+            {t("navigation.activity")}
           </NavItem>
           <NavItem to="/settings">
             <Settings className="h-5 w-5" />
-            Mon partage
+            {t("navigation.sharing")}
           </NavItem>
           {user.isAdmin && (
             <NavItem to="/admin">
               <ShieldCheck className="h-5 w-5" />
-              Administration
+              {t("navigation.administration")}
             </NavItem>
           )}
         </nav>
@@ -71,13 +77,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <Avatar name={user.name} src={user.avatarUrl} size="sm" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-white">{user.name}</p>
-              <p className="text-xs text-muted">{user.isAdmin ? "Administrateur" : "Membre"}</p>
+              <p className="text-xs text-muted">
+                {user.isAdmin
+                  ? t("navigation.administrator")
+                  : t("navigation.member")}
+              </p>
             </div>
             <button
               type="button"
               onClick={() => void logout()}
               className="rounded-xl p-2 text-muted transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet"
-              aria-label="Se déconnecter"
+              aria-label={t("navigation.logout")}
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -90,10 +100,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-violet to-cyan">
             <Radar className="h-5 w-5 text-white" />
           </span>
-          <span className="font-semibold">WatchRadar</span>
+          <span className="font-semibold">{t("common.productName")}</span>
         </div>
         <p className="hidden text-xs uppercase tracking-[.2em] text-muted lg:block">
-          Votre cercle, en direct
+          {t("navigation.tagline")}
         </p>
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-muted sm:block">{user.name}</span>
@@ -102,7 +112,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             type="button"
             onClick={() => void logout()}
             className="rounded-xl p-2 text-muted hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet lg:hidden"
-            aria-label="Se déconnecter"
+            aria-label={t("navigation.logout")}
           >
             <LogOut className="h-4 w-4" />
           </button>
@@ -115,20 +125,24 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <nav
         className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-3 rounded-3xl border border-white/10 bg-panel/90 p-2 shadow-card backdrop-blur-xl lg:hidden"
-        aria-label="Navigation mobile"
+        aria-label={t("navigation.mobileLabel")}
       >
         <NavItem to="/" exact>
           <Gauge className="h-5 w-5" />
-          <span className="hidden min-[390px]:inline">Activité</span>
+          <span className="hidden min-[390px]:inline">{t("navigation.activity")}</span>
         </NavItem>
         <NavItem to="/settings">
           <Settings className="h-5 w-5" />
-          <span className="hidden min-[390px]:inline">Partage</span>
+          <span className="hidden min-[390px]:inline">
+            {t("navigation.sharingShort")}
+          </span>
         </NavItem>
         {user.isAdmin ? (
           <NavItem to="/admin">
             <ShieldCheck className="h-5 w-5" />
-            <span className="hidden min-[390px]:inline">Admin</span>
+            <span className="hidden min-[390px]:inline">
+              {t("navigation.adminShort")}
+            </span>
           </NavItem>
         ) : (
           <span />

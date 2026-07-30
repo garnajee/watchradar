@@ -1,10 +1,12 @@
 export type ShareMode = "ALL" | "NONE" | "ONLY_WATCHING" | "SELECTED";
+export type Locale = "en" | "fr";
 
 export type CurrentUser = {
   id: number;
   name: string;
   jellyfinUserId: string;
   isAdmin: boolean;
+  locale: Locale;
   avatarUrl: string;
 };
 

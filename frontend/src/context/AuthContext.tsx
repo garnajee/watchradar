@@ -8,7 +8,8 @@ import {
   type ReactNode
 } from "react";
 import { apiFetch } from "../lib/api";
-import type { CurrentUser } from "../types";
+import type { CurrentUser, Locale } from "../types";
+import { useI18n } from "./I18nContext";
 
 type AuthContextValue = {
   user: CurrentUser | null;
@@ -16,11 +17,13 @@ type AuthContextValue = {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   reload: () => Promise<void>;
+  updateLocale: (locale: Locale) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { setLocale } = useI18n();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,10 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const payload = await apiFetch<{ user: CurrentUser }>("/auth/me");
       setUser(payload.user);
+      setLocale(payload.user.locale);
     } catch {
       setUser(null);
     }
-  }, []);
+  }, [setLocale]);
 
   useEffect(() => {
     void reload().finally(() => setLoading(false));
@@ -44,8 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ username, password })
       });
       setUser(payload.user);
+      setLocale(payload.user.locale);
     },
-    []
+    [setLocale]
   );
 
   const logout = useCallback(async () => {
@@ -56,9 +61,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateLocale = useCallback(
+    async (locale: Locale) => {
+      await apiFetch<{ locale: Locale }>("/user/locale", {
+        method: "PUT",
+        body: JSON.stringify({ locale })
+      });
+      setUser((current) => (current ? { ...current, locale } : current));
+      setLocale(locale);
+    },
+    [setLocale]
+  );
+
   const value = useMemo(
-    () => ({ user, loading, login, logout, reload }),
-    [user, loading, login, logout, reload]
+    () => ({ user, loading, login, logout, reload, updateLocale }),
+    [user, loading, login, logout, reload, updateLocale]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

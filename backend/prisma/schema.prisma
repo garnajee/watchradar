@@ -20,6 +20,7 @@ model SiteUser {
   jellyfinUserId     String             @unique
   name               String
   avatarTag          String?
+  locale             String             @default("en")
   isEnabled          Boolean            @default(false)
   isAdmin            Boolean            @default(false)
   createdAt          DateTime           @default(now())

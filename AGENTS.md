@@ -21,6 +21,8 @@ These instructions apply to the entire repository.
 - Add or update tests for authorization, privacy filtering, crypto, and other security-sensitive logic.
 - Use Prisma migrations for persistent schema changes.
 - Keep the UI responsive and keyboard accessible. All interactive controls need visible focus states and labels.
+- Keep every user-facing frontend string in `frontend/src/locales/en.json` and
+  `frontend/src/locales/fr.json`; both dictionaries must expose the same keys.
 - Update `README.md` and `.env.example` whenever deployment variables or setup steps change.
 
 ## Before handing off a change

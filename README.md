@@ -1,50 +1,51 @@
 # WatchRadar
 
-WatchRadar est un tableau de bord privé pour Jellyfin. Il permet aux utilisateurs
-autorisés de voir ce que leurs proches regardent, leurs contenus en cours et leur
-historique, dans le respect des préférences de partage de chacun.
+WatchRadar is a private dashboard for Jellyfin circles. Authorized users can
+see what friends and family are watching, their in-progress media, and their
+history while respecting each person's sharing preferences.
 
-## Fonctionnalités
+## Features
 
-- connexion avec un compte Jellyfin ;
-- activité en direct, progression, historique et « À suivre » ;
-- favoris et interface responsive ;
-- partage `ALL`, `ONLY_WATCHING`, `SELECTED` ou `NONE` ;
-- matrice administrateur « qui peut voir qui » ;
-- clé API Jellyfin chiffrée côté serveur ;
-- sessions persistantes et révocables.
+- Sign in with a Jellyfin account
+- Live activity, progress, watch history, and Next up
+- Favorites and a responsive interface
+- English and French user interfaces
+- Per-user sharing modes: `ALL`, `ONLY_WATCHING`, `SELECTED`, or `NONE`
+- Administrator-controlled visibility matrix
+- Encrypted Jellyfin API key
+- Persistent, revocable sessions
 
-L’accès à une activité nécessite toujours deux autorisations : la matrice de
-visibilité de l’administrateur et le choix de partage de la personne observée.
+Activity is visible only when both privacy rules allow it: the administrator's
+visibility matrix and the observed user's sharing preference.
 
 ## Architecture
 
 ```text
-Navigateur ── HTTPS ──> reverse proxy de l’utilisateur
-                              │
-                              └── HTTP ──> WatchRadar :8080
-                                             ├── React
-                                             └── /api ──> Express ──> PostgreSQL
-                                                                  └── HTTPS ──> Jellyfin
+Browser ── HTTPS ──> your reverse proxy
+                           │
+                           └── HTTP ──> WatchRadar :8080
+                                          ├── React
+                                          └── /api ──> Express ──> PostgreSQL
+                                                               └── HTTPS ──> Jellyfin
 ```
 
-WatchRadar ne génère aucun certificat. Le reverse proxy (Caddy, Nginx, Traefik,
-Nginx Proxy Manager…) possède le domaine et termine HTTPS, puis transmet le
-trafic à l’unique port HTTP de WatchRadar.
+WatchRadar does not generate or manage public certificates. Your reverse proxy
+(Caddy, Nginx, Traefik, Nginx Proxy Manager, and so on) owns the domain,
+terminates HTTPS, and forwards traffic to WatchRadar's single HTTP port.
 
-Le lien WatchRadar → Jellyfin doit rester en HTTPS : il transporte les
-identifiants de connexion et la clé API Jellyfin. Il est indépendant du
-certificat public installé sur le reverse proxy.
+The WatchRadar → Jellyfin connection must remain HTTPS because it transports
+Jellyfin credentials and the API key. It is independent from the public
+certificate installed on your reverse proxy.
 
 ## Installation
 
-Prérequis :
+Requirements:
 
-- Docker avec Docker Compose v2 ;
-- un serveur Jellyfin accessible en HTTPS ;
-- un domaine HTTPS géré par votre reverse proxy.
+- Docker with Docker Compose v2
+- A Jellyfin server reachable over HTTPS
+- An HTTPS domain handled by your reverse proxy
 
-Clonez le projet puis lancez l’assistant :
+Clone the repository and run the setup assistant:
 
 ```bash
 git clone https://github.com/garnajee/watchradar.git
@@ -52,9 +53,11 @@ cd watchradar
 ./scripts/setup.sh
 ```
 
-Le script crée l’unique fichier de configuration, `.env` à la racine, génère
-les secrets et propose de démarrer les conteneurs. Il peut tout faire sans
-interaction :
+The script creates the only configuration file, `.env` at the project root,
+generates secure secrets, validates the Compose configuration, and offers to
+start the containers.
+
+For an automated installation:
 
 ```bash
 ./scripts/setup.sh \
@@ -66,26 +69,28 @@ interaction :
   --non-interactive
 ```
 
-Les secrets existants sont réutilisés. `ENCRYPTION_KEY` n’est jamais remplacée
-automatiquement, car elle protège la clé API Jellyfin déjà enregistrée.
+Existing valid secrets are reused. In particular, `ENCRYPTION_KEY` is never
+rotated automatically because it protects the Jellyfin API key already stored
+in the database.
 
-Après le démarrage :
+After WatchRadar starts:
 
-1. ouvrez l’URL publique de WatchRadar ;
-2. connectez-vous avec un administrateur Jellyfin ;
-3. ouvrez **Administration** et enregistrez une clé API créée dans Jellyfin ;
-4. synchronisez puis activez les utilisateurs ;
-5. réglez la matrice de visibilité.
+1. Open its public HTTPS URL.
+2. Sign in with a Jellyfin administrator account.
+3. Open **Administration** and save a Jellyfin API key.
+4. Synchronize and enable the users you want to allow.
+5. Configure the visibility matrix.
 
-La clé API se crée dans Jellyfin via
-**Tableau de bord → Avancé → Clés API**. Elle n’est jamais exposée au navigateur.
+Create the API key in Jellyfin under
+**Dashboard → Advanced → API Keys**. It is encrypted server-side and is never
+returned to the browser.
 
 ## Reverse proxy
 
-Votre reverse proxy doit envoyer tout le domaine vers le même upstream. Le
-Nginx inclus dans WatchRadar route déjà `/api` vers le backend.
+Forward the entire domain to the same WatchRadar upstream. The included Nginx
+instance already routes `/api` to the private backend.
 
-Avec Caddy :
+Caddy example:
 
 ```caddyfile
 watchradar.example.com {
@@ -93,7 +98,7 @@ watchradar.example.com {
 }
 ```
 
-Avec Nginx :
+Nginx example:
 
 ```nginx
 location / {
@@ -107,40 +112,57 @@ location / {
 }
 ```
 
-`proxy_buffering off` et le délai long sont nécessaires au flux SSE temps réel.
-Si le proxy est sur le même hôte, conservez
-`WATCHRADAR_BIND_ADDRESS=127.0.0.1`. Pour un proxy conteneurisé ou distant,
-utilisez `0.0.0.0` et limitez le port au réseau de confiance avec le pare-feu.
+`proxy_buffering off` and the long timeout are required for the real-time SSE
+stream.
 
-## Sessions
+Keep `WATCHRADAR_BIND_ADDRESS=127.0.0.1` when the reverse proxy runs directly
+on the same host. For a containerized or remote proxy, use `0.0.0.0` and limit
+the port to a trusted network with your firewall.
 
-La connexion reste active jusqu’à 180 jours après la dernière utilisation :
+## Persistent sessions
 
-- le court jeton d’accès est renouvelé automatiquement, y compris après la
-  fermeture puis la réouverture du navigateur ;
-- le jeton de session est aléatoire, haché en base et remplacé à chaque
-  renouvellement ;
-- une déconnexion ou la désactivation du compte révoque la session côté serveur ;
-- un utilisateur peut conserver au maximum dix sessions/appareils.
+A session remains active for up to 180 days after its last use:
 
-Les cookies sont `httpOnly`, `Secure` et `SameSite=Strict`. L’URL publique doit
-donc réellement être en HTTPS.
+- Short-lived access tokens are renewed automatically, including after the
+  browser is closed and reopened.
+- Session tokens are random, stored as hashes, and rotated on every renewal.
+- Signing out or disabling an account revokes its sessions server-side.
+- Each user can keep up to ten device sessions.
 
-## Configuration utile
+Cookies are `httpOnly`, `Secure`, and `SameSite=Strict`, so the public URL must
+actually use HTTPS.
 
-| Variable | Utilité |
+## Languages
+
+English is the default language. Each user can switch between **English** and
+**Français** under **Settings → Interface language**. The preference is stored
+on the user account and remembered locally for the next sign-in screen.
+
+All interface copy is centralized in:
+
+```text
+frontend/src/locales/en.json
+frontend/src/locales/fr.json
+```
+
+Both dictionaries must contain the same keys; the automated tests enforce this.
+
+## Main configuration
+
+| Variable | Purpose |
 |---|---|
-| `FRONTEND_ORIGIN` | URL HTTPS publique, sans slash final |
-| `JELLYFIN_URL` | URL HTTPS joignable depuis le conteneur backend |
-| `WATCHRADAR_BIND_ADDRESS` | Interface du port HTTP (`127.0.0.1` recommandé si possible) |
-| `WATCHRADAR_HTTP_PORT` | Port ciblé par le reverse proxy, `8080` par défaut |
-| `JELLYFIN_TLS_REJECT_UNAUTHORIZED` | Validation du certificat Jellyfin, `true` recommandé |
+| `FRONTEND_ORIGIN` | Public HTTPS origin without a trailing slash |
+| `JELLYFIN_URL` | Jellyfin HTTPS URL reachable from the backend container |
+| `WATCHRADAR_BIND_ADDRESS` | HTTP bind address; use `127.0.0.1` when possible |
+| `WATCHRADAR_HTTP_PORT` | Reverse-proxy upstream port; defaults to `8080` |
+| `JELLYFIN_TLS_REJECT_UNAUTHORIZED` | Jellyfin certificate validation; keep `true` in production |
 
-Toutes les variables sont documentées dans [.env.example](.env.example).
-N’utilisez pas `https://localhost:8096` pour Jellyfin depuis Docker : `localhost`
-désignerait le conteneur backend.
+Every variable is documented in [.env.example](.env.example).
 
-## Commandes courantes
+Do not use `https://localhost:8096` for Jellyfin from Docker:
+`localhost` would refer to the backend container itself.
+
+## Common commands
 
 ```bash
 docker compose ps
@@ -149,19 +171,19 @@ docker compose up -d --build
 docker compose down
 ```
 
-La base est conservée dans le volume `postgres_data`. Les migrations sont
-appliquées automatiquement au démarrage du backend.
+PostgreSQL data is stored in the `postgres_data` volume. Prisma migrations are
+applied automatically when the backend starts.
 
-Sauvegarde :
+Database backup:
 
 ```bash
 docker compose exec -T db pg_dump -U watchradar watchradar > watchradar.sql
 ```
 
-## Développement
+## Local development
 
-Node.js 24 ou plus récent est requis. Le développement utilise aussi uniquement
-le `.env` racine :
+Node.js 24 or newer is required. Local development also uses only the root
+`.env` file:
 
 ```bash
 npm install
@@ -170,10 +192,10 @@ npm run db:generate
 npm run dev
 ```
 
-React est disponible sur `http://localhost:5173` et Vite transmet `/api` au
-backend local.
+React is available at `http://localhost:5173`; Vite forwards `/api` to the
+local backend.
 
-Validation complète :
+Run the full validation suite with:
 
 ```bash
 npm run typecheck
@@ -182,13 +204,14 @@ npm run build
 docker compose config
 ```
 
-## Dépannage
+## Troubleshooting
 
-- Santé : `https://votre-domaine/api/health`
-- Dashboard hors ligne : vérifiez l’URL, la clé API et le certificat Jellyfin.
-- SSE instable : désactivez le buffering du reverse proxy et augmentez son délai.
-- Erreur CORS : `FRONTEND_ORIGIN` doit correspondre exactement à l’URL publique.
+- Health endpoint: `https://your-domain.example/api/health`
+- Offline dashboard: check the Jellyfin URL, API key, and TLS certificate.
+- Unstable live updates: disable reverse-proxy buffering and increase its
+  read timeout.
+- CORS errors: `FRONTEND_ORIGIN` must exactly match the public HTTPS origin.
 
-## Licence
+## License
 
-Distribué sous licence [MIT](LICENSE).
+Released under the [MIT License](LICENSE).

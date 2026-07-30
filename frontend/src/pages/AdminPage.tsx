@@ -1,7 +1,9 @@
 import { RefreshCw, Save, ServerCog, ShieldCheck, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Avatar } from "../components/Avatar";
+import { useI18n } from "../context/I18nContext";
 import { apiFetch } from "../lib/api";
+import { localizedError } from "../lib/error-message";
 
 type AdminUser = {
   id: number;
@@ -19,6 +21,7 @@ type VisibilityEntry = {
 };
 
 export function AdminPage() {
+  const { t } = useI18n();
   const [jellyfinUrl, setJellyfinUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [configured, setConfigured] = useState(false);
@@ -54,12 +57,12 @@ export function AdminPage() {
 
   useEffect(() => {
     void loadAll().catch((caught) =>
-      setError(caught instanceof Error ? caught.message : "Chargement impossible.")
+      setError(localizedError(caught, t, "errors.loadFailed"))
     );
     return () => {
       if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
     };
-  }, [loadAll]);
+  }, [loadAll, t]);
 
   const enabledCount = useMemo(() => users.filter((user) => user.isEnabled).length, [users]);
 
@@ -81,10 +84,17 @@ export function AdminPage() {
       });
       setApiKey("");
       setConfigured(true);
-      success(`Configuration enregistrée · ${payload.syncedUsers} compte(s) synchronisé(s).`);
+      success(
+        t(
+          payload.syncedUsers === 1
+            ? "admin.configSavedOne"
+            : "admin.configSavedOther",
+          { count: payload.syncedUsers }
+        )
+      );
       await loadAll();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Enregistrement impossible.");
+      setError(localizedError(caught, t, "errors.saveFailed"));
     } finally {
       setBusy("");
     }
@@ -95,9 +105,14 @@ export function AdminPage() {
     try {
       const payload = await apiFetch<{ syncedUsers: number }>("/admin/sync", { method: "POST" });
       await loadAll();
-      success(`${payload.syncedUsers} compte(s) synchronisé(s).`);
+      success(
+        t(
+          payload.syncedUsers === 1 ? "admin.syncedOne" : "admin.syncedOther",
+          { count: payload.syncedUsers }
+        )
+      );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Synchronisation impossible.");
+      setError(localizedError(caught, t, "errors.syncFailed"));
     } finally {
       setBusy("");
     }
@@ -112,7 +127,7 @@ export function AdminPage() {
       });
       await loadAll();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Modification impossible.");
+      setError(localizedError(caught, t, "errors.updateFailed"));
     } finally {
       setBusy("");
     }
@@ -132,9 +147,9 @@ export function AdminPage() {
         method: "PUT",
         body: JSON.stringify({ entries })
       });
-      success("Matrice de visibilité enregistrée.");
+      success(t("admin.visibilitySaved"));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Enregistrement impossible.");
+      setError(localizedError(caught, t, "errors.saveFailed"));
     } finally {
       setBusy("");
     }
@@ -142,10 +157,12 @@ export function AdminPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-7 sm:px-7 lg:px-10 lg:py-10">
-      <p className="eyebrow">Zone sécurisée</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Administration</h1>
+      <p className="eyebrow">{t("admin.eyebrow")}</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+        {t("admin.title")}
+      </h1>
       <p className="mt-2 text-sm text-muted">
-        Connectez Jellyfin, choisissez les membres et contrôlez les relations de visibilité.
+        {t("admin.description")}
       </p>
 
       {error && (
@@ -165,16 +182,18 @@ export function AdminPage() {
             <ServerCog className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="font-semibold text-white">Connexion Jellyfin</h2>
+            <h2 className="font-semibold text-white">
+              {t("admin.jellyfinConnection")}
+            </h2>
             <p className="mt-1 text-sm text-muted">
-              {configured ? "Clé API configurée et chiffrée." : "Configuration incomplète."}
+              {configured ? t("admin.configured") : t("admin.incomplete")}
             </p>
           </div>
         </div>
         <form onSubmit={(event) => void saveConfig(event)} className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
           <label>
             <span className="mb-2 block text-xs font-medium uppercase tracking-wider text-muted">
-              URL HTTPS
+              {t("admin.httpsUrl")}
             </span>
             <input
               className="input"
@@ -187,7 +206,7 @@ export function AdminPage() {
           </label>
           <label>
             <span className="mb-2 block text-xs font-medium uppercase tracking-wider text-muted">
-              {configured ? "Nouvelle clé API" : "Clé API"}
+              {configured ? t("admin.newApiKey") : t("admin.apiKey")}
             </span>
             <input
               className="input"
@@ -200,7 +219,7 @@ export function AdminPage() {
           </label>
           <button type="submit" className="button-primary" disabled={busy === "config"}>
             <Save className="h-4 w-4" />
-            Enregistrer
+            {t("common.save")}
           </button>
         </form>
       </section>
@@ -212,9 +231,12 @@ export function AdminPage() {
               <Users className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="font-semibold text-white">Membres</h2>
+              <h2 className="font-semibold text-white">{t("admin.members")}</h2>
               <p className="mt-1 text-sm text-muted">
-                {enabledCount} actif(s) sur {users.length}
+                {t("admin.enabledCount", {
+                  enabled: enabledCount,
+                  total: users.length
+                })}
               </p>
             </div>
           </div>
@@ -225,7 +247,7 @@ export function AdminPage() {
             disabled={!configured || busy === "sync"}
           >
             <RefreshCw className={`h-4 w-4 ${busy === "sync" ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Synchroniser</span>
+            <span className="hidden sm:inline">{t("admin.sync")}</span>
           </button>
         </div>
         <div className="divide-y divide-white/[.06]">
@@ -235,14 +257,19 @@ export function AdminPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-white">{user.name}</p>
                 <p className="mt-0.5 text-xs text-muted">
-                  {user.isAdmin ? "Administrateur Jellyfin" : "Utilisateur Jellyfin"}
+                  {user.isAdmin
+                    ? t("admin.jellyfinAdministrator")
+                    : t("admin.jellyfinUser")}
                 </p>
               </div>
               <button
                 type="button"
                 role="switch"
                 aria-checked={user.isEnabled}
-                aria-label={`${user.isEnabled ? "Désactiver" : "Activer"} ${user.name}`}
+                aria-label={t(
+                  user.isEnabled ? "admin.disableUser" : "admin.enableUser",
+                  { name: user.name }
+                )}
                 disabled={busy === `user-${user.id}`}
                 onClick={() => void toggleUser(user)}
                 className={`relative h-7 w-12 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet ${
@@ -267,8 +294,12 @@ export function AdminPage() {
               <ShieldCheck className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="font-semibold text-white">Qui voit qui ?</h2>
-              <p className="mt-1 text-sm text-muted">Lecteur en ligne, personne observée en colonne.</p>
+              <h2 className="font-semibold text-white">
+                {t("admin.visibilityTitle")}
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                {t("admin.visibilityDescription")}
+              </p>
             </div>
           </div>
           <button
@@ -278,18 +309,20 @@ export function AdminPage() {
             disabled={busy === "visibility" || matrixUsers.length === 0}
           >
             <Save className="h-4 w-4" />
-            <span className="hidden sm:inline">Enregistrer</span>
+            <span className="hidden sm:inline">{t("common.save")}</span>
           </button>
         </div>
         {matrixUsers.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted">Activez au moins un membre.</p>
+          <p className="p-8 text-center text-sm text-muted">
+            {t("admin.enableMember")}
+          </p>
         ) : (
           <div className="overflow-x-auto p-4 sm:p-6">
             <table className="w-full min-w-[560px] border-separate border-spacing-2 text-sm">
               <thead>
                 <tr>
                   <th className="p-2 text-left text-xs font-medium uppercase tracking-wider text-muted">
-                    Voit
+                    {t("admin.sees")}
                   </th>
                   {matrixUsers.map((target) => (
                     <th key={target.id} className="max-w-28 p-2 text-center font-medium text-white">
@@ -321,7 +354,10 @@ export function AdminPage() {
                                   [key]: event.target.checked
                                 }))
                               }
-                              aria-label={`${viewer.name} peut voir ${target.name}`}
+                              aria-label={t("admin.visibilityLabel", {
+                                viewer: viewer.name,
+                                target: target.name
+                              })}
                             />
                           </label>
                         </td>

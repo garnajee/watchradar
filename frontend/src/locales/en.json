@@ -1,0 +1,189 @@
+{
+  "meta": {
+    "description": "A private, real-time dashboard for your Jellyfin circle."
+  },
+  "common": {
+    "productName": "WatchRadar",
+    "jellyfinCircle": "Jellyfin circle",
+    "loading": "WatchRadar is syncing…",
+    "save": "Save",
+    "refresh": "Refresh",
+    "search": "Search…",
+    "movie": "Movie",
+    "series": "Series",
+    "units": {
+      "hour": "h",
+      "minute": "min",
+      "season": "S",
+      "episode": "E"
+    },
+    "counts": {
+      "titleOne": "{{count}} title",
+      "titleOther": "{{count}} titles",
+      "selectedOne": "{{count}} selected",
+      "selectedOther": "{{count}} selected"
+    }
+  },
+  "navigation": {
+    "primaryLabel": "Main navigation",
+    "mobileLabel": "Mobile navigation",
+    "activity": "Activity",
+    "sharing": "My sharing",
+    "sharingShort": "Sharing",
+    "administration": "Administration",
+    "adminShort": "Admin",
+    "tagline": "Your circle, live",
+    "administrator": "Administrator",
+    "member": "Member",
+    "logout": "Log out"
+  },
+  "auth": {
+    "tagline": "See your Jellyfin circle, live.",
+    "title": "Sign in",
+    "subtitle": "Use your usual Jellyfin credentials.",
+    "username": "Username",
+    "password": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "connecting": "Signing in…",
+    "submit": "Sign in",
+    "passwordPrivacy": "Your password is sent to Jellyfin and is never stored.",
+    "configurationHeading": "Incomplete Jellyfin configuration"
+  },
+  "setup": {
+    "checkFailed": "The configuration could not be checked. WatchRadar may not work correctly.",
+    "missingUrl": "The Jellyfin URL is missing. Set JELLYFIN_URL in the root .env file, then restart WatchRadar.",
+    "missingApiKey": "The API key is missing. Sign in with a Jellyfin administrator, then save it under Administration. Sharing will not work until then.",
+    "incomplete": "The Jellyfin configuration is incomplete. WatchRadar may not work correctly."
+  },
+  "dashboard": {
+    "today": "Today",
+    "title": "In your circle",
+    "subtitle": "A view that respects everyone's choices.",
+    "nothingPlaying": "Nothing playing",
+    "offlineNow": "{{name}} is offline right now.",
+    "live": "Live",
+    "paused": "Paused",
+    "movieProgress": "Movie · {{percent}}% watched",
+    "watchedOn": "Watched on {{date}}",
+    "emptyCircleTitle": "Your circle is empty",
+    "emptyCircleDescription": "An administrator must enable accounts and grant visibility between them.",
+    "previousUser": "Previous user",
+    "nextUser": "Next user",
+    "displayedPerson": "Displayed person",
+    "offline": "Offline",
+    "activityOf": "Activity from",
+    "removeFavorite": "Remove from favorites",
+    "addFavorite": "Add to favorites",
+    "privateTitle": "Private activity",
+    "privateDescription": "{{name}} chose not to share anything.",
+    "liveOnlyTitle": "Live only",
+    "liveOnlyDescription": "{{name}} only shares what is currently playing.",
+    "nextUpTitle": "Next up · where {{name}} left off",
+    "nextUpEmpty": "No upcoming episode to display.",
+    "resumeTitle": "Continue watching",
+    "resumeEmpty": "No interrupted playback to resume.",
+    "historyTitle": "Watch history",
+    "historyEmpty": "No shared history yet."
+  },
+  "settings": {
+    "eyebrow": "Privacy",
+    "title": "My sharing",
+    "description": "The administrator decides who can see you. You always have the final say over what those people can see.",
+    "language": {
+      "title": "Interface language",
+      "description": "Choose the language used throughout WatchRadar.",
+      "label": "Language",
+      "english": "English",
+      "french": "Français",
+      "saved": "Language updated."
+    },
+    "sharingTitle": "What I share",
+    "preferenceSaved": "Preference saved.",
+    "modes": {
+      "all": {
+        "title": "Share everything",
+        "description": "Live activity, Next up, resumable items, and movie and series history."
+      },
+      "watching": {
+        "title": "Live only",
+        "description": "Only the title currently being watched is visible."
+      },
+      "selected": {
+        "title": "Selected titles",
+        "description": "Live activity and history only for the selected movies and series."
+      },
+      "none": {
+        "title": "Share nothing",
+        "description": "Your activity remains completely private."
+      }
+    },
+    "allowedTitles": "Allowed titles"
+  },
+  "admin": {
+    "eyebrow": "Secure area",
+    "title": "Administration",
+    "description": "Connect Jellyfin, choose members, and control visibility relationships.",
+    "jellyfinConnection": "Jellyfin connection",
+    "configured": "The API key is configured and encrypted.",
+    "incomplete": "Configuration is incomplete.",
+    "httpsUrl": "HTTPS URL",
+    "apiKey": "API key",
+    "newApiKey": "New API key",
+    "members": "Members",
+    "enabledCount": "{{enabled}} active out of {{total}}",
+    "sync": "Sync",
+    "jellyfinAdministrator": "Jellyfin administrator",
+    "jellyfinUser": "Jellyfin user",
+    "disableUser": "Disable {{name}}",
+    "enableUser": "Enable {{name}}",
+    "visibilityTitle": "Who can see whom?",
+    "visibilityDescription": "Viewer by row, observed person by column.",
+    "enableMember": "Enable at least one member.",
+    "sees": "Sees",
+    "visibilityLabel": "{{viewer}} can see {{target}}",
+    "configSavedOne": "Configuration saved · {{count}} account synchronized.",
+    "configSavedOther": "Configuration saved · {{count}} accounts synchronized.",
+    "syncedOne": "{{count}} account synchronized.",
+    "syncedOther": "{{count}} accounts synchronized.",
+    "visibilitySaved": "Visibility matrix saved."
+  },
+  "notFound": {
+    "eyebrow": "Error 404",
+    "title": "Signal not found",
+    "back": "Return to dashboard"
+  },
+  "errors": {
+    "requestFailed": "The request failed.",
+    "loginFailed": "Unable to sign in.",
+    "loadFailed": "Unable to load data.",
+    "activityUnavailable": "Activity is unavailable.",
+    "refreshFailed": "Unable to refresh.",
+    "catalogUnavailable": "The library is unavailable.",
+    "saveFailed": "Unable to save.",
+    "updateFailed": "Unable to update.",
+    "syncFailed": "Unable to synchronize.",
+    "api": {
+      "tooManyAttempts": "Too many sign-in attempts. Try again in fifteen minutes.",
+      "tooManyRequests": "Too many requests. Please try again later.",
+      "setupRequired": "The Jellyfin configuration is incomplete.",
+      "userDisabled": "This account is not enabled on WatchRadar.",
+      "unauthenticated": "Your session has expired. Please sign in again.",
+      "forbidden": "You do not have permission to perform this action.",
+      "originDenied": "The request origin is not allowed.",
+      "notFound": "The requested resource was not found.",
+      "validation": "The submitted data is invalid.",
+      "internal": "An internal error occurred.",
+      "notVisible": "This user is unavailable or not visible.",
+      "tooManyStreams": "Too many live connections are open.",
+      "jellyfinHttps": "The Jellyfin URL must use HTTPS.",
+      "jellyfinUrlInvalid": "The Jellyfin URL must not contain credentials, query parameters, or a fragment.",
+      "jellyfinCredentials": "The Jellyfin credentials or API key are invalid.",
+      "jellyfinUnavailable": "Jellyfin is currently unavailable.",
+      "invalidMedia": "This image URL is invalid or has expired.",
+      "imageNotFound": "The image was not found.",
+      "unsafeImage": "This image format is not allowed.",
+      "imageTooLarge": "This image is too large."
+    }
+  }
+}

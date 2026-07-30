@@ -4,19 +4,25 @@ export type ConfigurationStatus = {
   apiKeyConfigured: boolean;
 };
 
-export function getConfigurationWarning(
+export type ConfigurationWarningKey =
+  | "setup.checkFailed"
+  | "setup.missingUrl"
+  | "setup.missingApiKey"
+  | "setup.incomplete";
+
+export function getConfigurationWarningKey(
   configuration: ConfigurationStatus | null,
   loadFailed: boolean
-): string | null {
+): ConfigurationWarningKey | null {
   if (loadFailed) {
-    return "Impossible de vérifier la configuration. WatchRadar risque de ne pas fonctionner.";
+    return "setup.checkFailed";
   }
   if (!configuration || configuration.ready) return null;
   if (!configuration.jellyfinUrlConfigured) {
-    return "L’URL Jellyfin n’est pas renseignée. Définissez JELLYFIN_URL dans .env puis redémarrez WatchRadar.";
+    return "setup.missingUrl";
   }
   if (!configuration.apiKeyConfigured) {
-    return "La clé API n’est pas renseignée. Connectez-vous avec un administrateur Jellyfin puis enregistrez-la dans Administration. Le partage ne fonctionnera pas avant.";
+    return "setup.missingApiKey";
   }
-  return "La configuration Jellyfin est incomplète. WatchRadar risque de ne pas fonctionner.";
+  return "setup.incomplete";
 }

@@ -14,11 +14,22 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "../components/Avatar";
 import { MediaImage } from "../components/MediaImage";
+import { useI18n } from "../context/I18nContext";
 import { API_URL, apiFetch } from "../lib/api";
+import { localizedError } from "../lib/error-message";
 import { formatDuration, formatEpisode } from "../lib/format";
 import type { ActivityItem, DashboardUser, UserActivity } from "../types";
 
 function LiveCard({ user }: { user: DashboardUser }) {
+  const { t } = useI18n();
+  const episodeUnits = {
+    season: t("common.units.season"),
+    episode: t("common.units.episode")
+  };
+  const durationUnits = {
+    hour: t("common.units.hour"),
+    minute: t("common.units.minute")
+  };
   const playback = user.playback;
   if (!playback) {
     return (
@@ -27,8 +38,10 @@ function LiveCard({ user }: { user: DashboardUser }) {
           <span className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-white/5 text-muted">
             <Radio className="h-5 w-5" />
           </span>
-          <p className="font-medium text-white">Rien en lecture</p>
-          <p className="mt-1 text-sm text-muted">{user.name} est hors ligne pour le moment.</p>
+          <p className="font-medium text-white">{t("dashboard.nothingPlaying")}</p>
+          <p className="mt-1 text-sm text-muted">
+            {t("dashboard.offlineNow", { name: user.name })}
+          </p>
         </div>
       </div>
     );
@@ -48,7 +61,7 @@ function LiveCard({ user }: { user: DashboardUser }) {
             <span
               className={`h-2 w-2 rounded-full bg-coral ${playback.isPlaying ? "animate-pulse-soft" : ""}`}
             />
-            {playback.isPlaying ? "En direct" : "En pause"}
+            {playback.isPlaying ? t("dashboard.live") : t("dashboard.paused")}
           </span>
           <Play className="h-8 w-8 text-white/30" fill="currentColor" />
         </div>
@@ -60,10 +73,17 @@ function LiveCard({ user }: { user: DashboardUser }) {
         </h2>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-300">
           {(playback.seasonNumber !== null || playback.episodeNumber !== null) && (
-            <span>{formatEpisode(playback.seasonNumber, playback.episodeNumber)}</span>
+            <span>
+              {formatEpisode(
+                playback.seasonNumber,
+                playback.episodeNumber,
+                episodeUnits
+              )}
+            </span>
           )}
           <span>
-            {formatDuration(playback.positionTicks)} / {formatDuration(playback.runtimeTicks)}
+            {formatDuration(playback.positionTicks, durationUnits)} /{" "}
+            {formatDuration(playback.runtimeTicks, durationUnits)}
           </span>
         </div>
         <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -88,6 +108,11 @@ function ActivityShelf({
   empty: string;
   kind: "nextUp" | "resume" | "history";
 }) {
+  const { locale, t } = useI18n();
+  const episodeUnits = {
+    season: t("common.units.season"),
+    episode: t("common.units.episode")
+  };
   const sectionIcon = {
     nextUp: ListVideo,
     resume: RotateCcw,
@@ -101,7 +126,14 @@ function ActivityShelf({
           <SectionIcon className="h-5 w-5 text-cyan" />
           {title}
         </h2>
-        <span className="text-xs text-muted">{items.length} titre{items.length > 1 ? "s" : ""}</span>
+        <span className="text-xs text-muted">
+          {t(
+            items.length === 1
+              ? "common.counts.titleOne"
+              : "common.counts.titleOther",
+            { count: items.length }
+          )}
+        </span>
       </div>
       {items.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-white/10 px-6 py-9 text-center text-sm text-muted">
@@ -128,7 +160,11 @@ function ActivityShelf({
                 {item.seriesName &&
                   (item.seasonNumber !== null || item.episodeNumber !== null) && (
                     <span className="absolute bottom-3 left-3 rounded-lg bg-black/75 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur">
-                      {formatEpisode(item.seasonNumber, item.episodeNumber)}
+                      {formatEpisode(
+                        item.seasonNumber,
+                        item.episodeNumber,
+                        episodeUnits
+                      )}
                     </span>
                   )}
               </div>
@@ -137,16 +173,27 @@ function ActivityShelf({
               </h3>
               <p className="mt-1 line-clamp-2 min-h-8 text-xs leading-relaxed text-muted">
                 {item.seriesName
-                  ? `${formatEpisode(item.seasonNumber, item.episodeNumber)} · ${item.name}`
+                  ? `${formatEpisode(
+                      item.seasonNumber,
+                      item.episodeNumber,
+                      episodeUnits
+                    )} · ${item.name}`
                   : kind === "resume" && item.progress > 0
-                    ? `Film · ${Math.round(item.progress)} % regardé`
+                    ? t("dashboard.movieProgress", {
+                        percent: Math.round(item.progress)
+                      })
                     : kind === "history" && item.lastPlayedDate
-                      ? `Vu le ${new Date(item.lastPlayedDate).toLocaleDateString("fr-FR", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric"
-                        })}`
-                      : "Film"}
+                      ? t("dashboard.watchedOn", {
+                          date: new Date(item.lastPlayedDate).toLocaleDateString(
+                            locale === "fr" ? "fr-FR" : "en-US",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric"
+                            }
+                          )
+                        })
+                      : t("common.movie")}
               </p>
             </article>
           ))}
@@ -157,6 +204,7 @@ function ActivityShelf({
 }
 
 export function DashboardPage() {
+  const { t } = useI18n();
   const [users, setUsers] = useState<DashboardUser[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [activity, setActivity] = useState<UserActivity | null>(null);
@@ -186,9 +234,9 @@ export function DashboardPage() {
 
   useEffect(() => {
     void loadUsers()
-      .catch((caught) => setError(caught instanceof Error ? caught.message : "Chargement impossible."))
+      .catch((caught) => setError(localizedError(caught, t, "errors.loadFailed")))
       .finally(() => setLoading(false));
-  }, [loadUsers]);
+  }, [loadUsers, t]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -205,11 +253,11 @@ export function DashboardPage() {
       })
       .catch((caught) => {
         if (!controller.signal.aborted) {
-          setError(caught instanceof Error ? caught.message : "Activité indisponible.");
+          setError(localizedError(caught, t, "errors.activityUnavailable"));
         }
       });
     return () => controller.abort();
-  }, [selectedId]);
+  }, [selectedId, t]);
 
   useEffect(() => {
     let source: EventSource | null = null;
@@ -306,23 +354,23 @@ export function DashboardPage() {
     >
       <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="eyebrow">Aujourd'hui</p>
+          <p className="eyebrow">{t("dashboard.today")}</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Dans votre cercle
+            {t("dashboard.title")}
           </h1>
-          <p className="mt-2 text-sm text-muted">Une vue respectueuse des choix de chacun.</p>
+          <p className="mt-2 text-sm text-muted">{t("dashboard.subtitle")}</p>
         </div>
         <button
           type="button"
           onClick={() =>
             void refreshDashboard().catch((caught) =>
-              setError(caught instanceof Error ? caught.message : "Actualisation impossible.")
+              setError(localizedError(caught, t, "errors.refreshFailed"))
             )
           }
           className="button-secondary self-start sm:self-auto"
         >
           <RefreshCw className="h-4 w-4" />
-          Actualiser
+          {t("common.refresh")}
         </button>
       </div>
 
@@ -340,9 +388,11 @@ export function DashboardPage() {
         <div className="card grid min-h-80 place-items-center p-8 text-center">
           <div>
             <Users className="mx-auto h-10 w-10 text-muted" />
-            <h2 className="mt-4 text-xl font-semibold text-white">Votre cercle est vide</h2>
+            <h2 className="mt-4 text-xl font-semibold text-white">
+              {t("dashboard.emptyCircleTitle")}
+            </h2>
             <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
-              Un administrateur doit activer des comptes et leur accorder une visibilité.
+              {t("dashboard.emptyCircleDescription")}
             </p>
           </div>
         </div>
@@ -355,12 +405,12 @@ export function DashboardPage() {
                   type="button"
                   className="icon-button"
                   onClick={() => move(-1)}
-                  aria-label="Utilisateur précédent"
+                  aria-label={t("dashboard.previousUser")}
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <label className="min-w-0 flex-1">
-                  <span className="sr-only">Personne affichée</span>
+                  <span className="sr-only">{t("dashboard.displayedPerson")}</span>
                   <select
                     className="input"
                     value={selectedId ?? ""}
@@ -377,7 +427,7 @@ export function DashboardPage() {
                   type="button"
                   className="icon-button"
                   onClick={() => move(1)}
-                  aria-label="Utilisateur suivant"
+                  aria-label={t("dashboard.nextUser")}
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -400,7 +450,9 @@ export function DashboardPage() {
                       <span>
                         <span className="block text-sm font-medium text-white">{user.name}</span>
                         <span className="block text-xs text-muted">
-                          {user.playback?.isPlaying ? "En direct" : "Hors ligne"}
+                          {user.playback?.isPlaying
+                            ? t("dashboard.live")
+                            : t("dashboard.offline")}
                         </span>
                       </span>
                     </button>
@@ -415,7 +467,7 @@ export function DashboardPage() {
               <div className="mb-5 flex items-center gap-4">
                 <Avatar name={selected.name} src={selected.avatarUrl} size="lg" />
                 <div className="min-w-0 flex-1">
-                  <p className="eyebrow">Activité de</p>
+                  <p className="eyebrow">{t("dashboard.activityOf")}</p>
                   <h2 className="truncate text-2xl font-semibold text-white">{selected.name}</h2>
                 </div>
                 {users.length > 1 && (
@@ -423,7 +475,11 @@ export function DashboardPage() {
                     type="button"
                     onClick={() => void toggleFavorite(selected)}
                     className={`icon-button ${selected.isFavorite ? "text-coral" : ""}`}
-                    aria-label={selected.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                    aria-label={
+                      selected.isFavorite
+                        ? t("dashboard.removeFavorite")
+                        : t("dashboard.addFavorite")
+                    }
                   >
                     <Heart className="h-5 w-5" fill={selected.isFavorite ? "currentColor" : "none"} />
                   </button>
@@ -434,37 +490,41 @@ export function DashboardPage() {
               {selected.shareMode === "NONE" ? (
                 <div className="mt-8 rounded-3xl border border-white/[.07] bg-white/[.03] p-8 text-center">
                   <EyeOff className="mx-auto h-8 w-8 text-muted" />
-                  <h3 className="mt-3 font-medium text-white">Activité privée</h3>
+                  <h3 className="mt-3 font-medium text-white">
+                    {t("dashboard.privateTitle")}
+                  </h3>
                   <p className="mt-1 text-sm text-muted">
-                    {selected.name} a choisi de ne rien partager.
+                    {t("dashboard.privateDescription", { name: selected.name })}
                   </p>
                 </div>
               ) : selected.shareMode === "ONLY_WATCHING" ? (
                 <div className="mt-8 rounded-3xl border border-white/[.07] bg-white/[.03] p-8 text-center">
                   <Radio className="mx-auto h-8 w-8 text-muted" />
-                  <h3 className="mt-3 font-medium text-white">Direct uniquement</h3>
+                  <h3 className="mt-3 font-medium text-white">
+                    {t("dashboard.liveOnlyTitle")}
+                  </h3>
                   <p className="mt-1 text-sm text-muted">
-                    {selected.name} partage uniquement ce qui est en cours de lecture.
+                    {t("dashboard.liveOnlyDescription", { name: selected.name })}
                   </p>
                 </div>
               ) : (
                 <>
                   <ActivityShelf
-                    title={`À suivre · ${selected.name} en est là`}
+                    title={t("dashboard.nextUpTitle", { name: selected.name })}
                     items={activity?.nextUp ?? []}
-                    empty="Aucun prochain épisode à afficher."
+                    empty={t("dashboard.nextUpEmpty")}
                     kind="nextUp"
                   />
                   <ActivityShelf
-                    title="À reprendre"
+                    title={t("dashboard.resumeTitle")}
                     items={activity?.resume ?? []}
-                    empty="Aucune lecture interrompue à reprendre."
+                    empty={t("dashboard.resumeEmpty")}
                     kind="resume"
                   />
                   <ActivityShelf
-                    title="Historique de lecture"
+                    title={t("dashboard.historyTitle")}
                     items={activity?.history ?? []}
-                    empty="Aucun historique partagé pour le moment."
+                    empty={t("dashboard.historyEmpty")}
                     kind="history"
                   />
                 </>

@@ -3,11 +3,13 @@ import { formatDuration, formatEpisode, initials } from "./format";
 
 describe("display formatters", () => {
   it("formats episode coordinates", () => {
-    expect(formatEpisode(2, 7)).toBe("S02 · E07");
+    expect(formatEpisode(2, 7, { season: "S", episode: "E" })).toBe("S02 · E07");
   });
 
   it("formats Jellyfin ticks", () => {
-    expect(formatDuration(String(90 * 60 * 10_000_000))).toBe("1 h 30");
+    expect(
+      formatDuration(String(90 * 60 * 10_000_000), { hour: "h", minute: "min" })
+    ).toBe("1 h 30");
   });
 
   it("creates short initials", () => {

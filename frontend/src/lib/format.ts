@@ -7,16 +7,25 @@ export function initials(name: string): string {
     .join("");
 }
 
-export function formatEpisode(season: number | null, episode: number | null): string {
+export function formatEpisode(
+  season: number | null,
+  episode: number | null,
+  units: { season: string; episode: string }
+): string {
   if (season === null && episode === null) return "";
-  return `S${String(season ?? 0).padStart(2, "0")} · E${String(episode ?? 0).padStart(2, "0")}`;
+  return `${units.season}${String(season ?? 0).padStart(2, "0")} · ${units.episode}${String(episode ?? 0).padStart(2, "0")}`;
 }
 
-export function formatDuration(ticksString: string): string {
+export function formatDuration(
+  ticksString: string,
+  units: { hour: string; minute: string }
+): string {
   const ticks = Number(ticksString);
-  if (!Number.isFinite(ticks)) return "0 min";
+  if (!Number.isFinite(ticks)) return `0 ${units.minute}`;
   const totalMinutes = Math.floor(ticks / 10_000_000 / 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  return hours ? `${hours} h ${minutes.toString().padStart(2, "0")}` : `${minutes} min`;
+  return hours
+    ? `${hours} ${units.hour} ${minutes.toString().padStart(2, "0")}`
+    : `${minutes} ${units.minute}`;
 }

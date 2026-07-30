@@ -56,7 +56,7 @@ export async function apiFetch<T>(
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as ApiErrorShape;
     throw new ApiError(
-      payload.error?.message ?? "La requête a échoué.",
+      payload.error?.message ?? "REQUEST_FAILED",
       response.status,
       payload.error?.code ?? "REQUEST_FAILED"
     );

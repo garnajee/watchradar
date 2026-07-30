@@ -48,12 +48,14 @@ function publicUser(user: {
   jellyfinUserId: string;
   isAdmin: boolean;
   avatarTag: string | null;
+  locale: string;
 }) {
   return {
     id: user.id,
     name: user.name,
     jellyfinUserId: user.jellyfinUserId,
     isAdmin: user.isAdmin,
+    locale: user.locale,
     avatarUrl: signedMediaUrl(user.id, "user", user.jellyfinUserId, user.avatarTag)
   };
 }

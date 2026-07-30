@@ -1,0 +1,189 @@
+{
+  "meta": {
+    "description": "Un tableau de bord privé et en temps réel pour votre cercle Jellyfin."
+  },
+  "common": {
+    "productName": "WatchRadar",
+    "jellyfinCircle": "Cercle Jellyfin",
+    "loading": "WatchRadar se synchronise…",
+    "save": "Enregistrer",
+    "refresh": "Actualiser",
+    "search": "Rechercher…",
+    "movie": "Film",
+    "series": "Série",
+    "units": {
+      "hour": "h",
+      "minute": "min",
+      "season": "S",
+      "episode": "E"
+    },
+    "counts": {
+      "titleOne": "{{count}} titre",
+      "titleOther": "{{count}} titres",
+      "selectedOne": "{{count}} sélectionné",
+      "selectedOther": "{{count}} sélectionnés"
+    }
+  },
+  "navigation": {
+    "primaryLabel": "Navigation principale",
+    "mobileLabel": "Navigation mobile",
+    "activity": "Activité",
+    "sharing": "Mon partage",
+    "sharingShort": "Partage",
+    "administration": "Administration",
+    "adminShort": "Admin",
+    "tagline": "Votre cercle, en direct",
+    "administrator": "Administrateur",
+    "member": "Membre",
+    "logout": "Se déconnecter"
+  },
+  "auth": {
+    "tagline": "Retrouvez votre cercle Jellyfin, en direct.",
+    "title": "Connexion",
+    "subtitle": "Utilisez vos identifiants Jellyfin habituels.",
+    "username": "Utilisateur",
+    "password": "Mot de passe",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "connecting": "Connexion…",
+    "submit": "Se connecter",
+    "passwordPrivacy": "Votre mot de passe est transmis à Jellyfin et n’est jamais enregistré.",
+    "configurationHeading": "Configuration Jellyfin incomplète"
+  },
+  "setup": {
+    "checkFailed": "Impossible de vérifier la configuration. WatchRadar risque de ne pas fonctionner.",
+    "missingUrl": "L’URL Jellyfin n’est pas renseignée. Définissez JELLYFIN_URL dans le fichier .env racine puis redémarrez WatchRadar.",
+    "missingApiKey": "La clé API n’est pas renseignée. Connectez-vous avec un administrateur Jellyfin puis enregistrez-la dans Administration. Le partage ne fonctionnera pas avant.",
+    "incomplete": "La configuration Jellyfin est incomplète. WatchRadar risque de ne pas fonctionner."
+  },
+  "dashboard": {
+    "today": "Aujourd’hui",
+    "title": "Dans votre cercle",
+    "subtitle": "Une vue respectueuse des choix de chacun.",
+    "nothingPlaying": "Rien en lecture",
+    "offlineNow": "{{name}} est hors ligne pour le moment.",
+    "live": "En direct",
+    "paused": "En pause",
+    "movieProgress": "Film · {{percent}} % regardé",
+    "watchedOn": "Vu le {{date}}",
+    "emptyCircleTitle": "Votre cercle est vide",
+    "emptyCircleDescription": "Un administrateur doit activer des comptes et leur accorder une visibilité.",
+    "previousUser": "Utilisateur précédent",
+    "nextUser": "Utilisateur suivant",
+    "displayedPerson": "Personne affichée",
+    "offline": "Hors ligne",
+    "activityOf": "Activité de",
+    "removeFavorite": "Retirer des favoris",
+    "addFavorite": "Ajouter aux favoris",
+    "privateTitle": "Activité privée",
+    "privateDescription": "{{name}} a choisi de ne rien partager.",
+    "liveOnlyTitle": "Direct uniquement",
+    "liveOnlyDescription": "{{name}} partage uniquement ce qui est en cours de lecture.",
+    "nextUpTitle": "À suivre · {{name}} en est là",
+    "nextUpEmpty": "Aucun prochain épisode à afficher.",
+    "resumeTitle": "À reprendre",
+    "resumeEmpty": "Aucune lecture interrompue à reprendre.",
+    "historyTitle": "Historique de lecture",
+    "historyEmpty": "Aucun historique partagé pour le moment."
+  },
+  "settings": {
+    "eyebrow": "Confidentialité",
+    "title": "Mon partage",
+    "description": "L’administrateur décide qui peut vous voir. Vous gardez toujours le dernier mot sur ce que ces personnes voient.",
+    "language": {
+      "title": "Langue de l’interface",
+      "description": "Choisissez la langue utilisée dans toute l’interface WatchRadar.",
+      "label": "Langue",
+      "english": "English",
+      "french": "Français",
+      "saved": "Langue mise à jour."
+    },
+    "sharingTitle": "Ce que je partage",
+    "preferenceSaved": "Préférence enregistrée.",
+    "modes": {
+      "all": {
+        "title": "Tout partager",
+        "description": "Direct, À suivre, reprises et historique des films et séries."
+      },
+      "watching": {
+        "title": "Uniquement en direct",
+        "description": "Seul le titre actuellement regardé est visible."
+      },
+      "selected": {
+        "title": "Certains titres",
+        "description": "Direct et historique uniquement pour les films et séries choisis."
+      },
+      "none": {
+        "title": "Rien du tout",
+        "description": "Votre activité reste entièrement privée."
+      }
+    },
+    "allowedTitles": "Titres autorisés"
+  },
+  "admin": {
+    "eyebrow": "Zone sécurisée",
+    "title": "Administration",
+    "description": "Connectez Jellyfin, choisissez les membres et contrôlez les relations de visibilité.",
+    "jellyfinConnection": "Connexion Jellyfin",
+    "configured": "La clé API est configurée et chiffrée.",
+    "incomplete": "La configuration est incomplète.",
+    "httpsUrl": "URL HTTPS",
+    "apiKey": "Clé API",
+    "newApiKey": "Nouvelle clé API",
+    "members": "Membres",
+    "enabledCount": "{{enabled}} actifs sur {{total}}",
+    "sync": "Synchroniser",
+    "jellyfinAdministrator": "Administrateur Jellyfin",
+    "jellyfinUser": "Utilisateur Jellyfin",
+    "disableUser": "Désactiver {{name}}",
+    "enableUser": "Activer {{name}}",
+    "visibilityTitle": "Qui voit qui ?",
+    "visibilityDescription": "Lecteur en ligne, personne observée en colonne.",
+    "enableMember": "Activez au moins un membre.",
+    "sees": "Voit",
+    "visibilityLabel": "{{viewer}} peut voir {{target}}",
+    "configSavedOne": "Configuration enregistrée · {{count}} compte synchronisé.",
+    "configSavedOther": "Configuration enregistrée · {{count}} comptes synchronisés.",
+    "syncedOne": "{{count}} compte synchronisé.",
+    "syncedOther": "{{count}} comptes synchronisés.",
+    "visibilitySaved": "Matrice de visibilité enregistrée."
+  },
+  "notFound": {
+    "eyebrow": "Erreur 404",
+    "title": "Signal introuvable",
+    "back": "Revenir au tableau de bord"
+  },
+  "errors": {
+    "requestFailed": "La requête a échoué.",
+    "loginFailed": "Connexion impossible.",
+    "loadFailed": "Chargement impossible.",
+    "activityUnavailable": "Activité indisponible.",
+    "refreshFailed": "Actualisation impossible.",
+    "catalogUnavailable": "Catalogue indisponible.",
+    "saveFailed": "Enregistrement impossible.",
+    "updateFailed": "Modification impossible.",
+    "syncFailed": "Synchronisation impossible.",
+    "api": {
+      "tooManyAttempts": "Trop de tentatives. Réessayez dans quinze minutes.",
+      "tooManyRequests": "Trop de requêtes. Réessayez plus tard.",
+      "setupRequired": "La configuration Jellyfin est incomplète.",
+      "userDisabled": "Ce compte n’est pas activé sur WatchRadar.",
+      "unauthenticated": "Votre session a expiré. Reconnectez-vous.",
+      "forbidden": "Vous n’avez pas l’autorisation d’effectuer cette action.",
+      "originDenied": "L’origine de la requête n’est pas autorisée.",
+      "notFound": "La ressource demandée est introuvable.",
+      "validation": "Les données envoyées sont invalides.",
+      "internal": "Une erreur interne est survenue.",
+      "notVisible": "Cet utilisateur est indisponible ou non visible.",
+      "tooManyStreams": "Trop de connexions temps réel sont ouvertes.",
+      "jellyfinHttps": "L’URL Jellyfin doit utiliser HTTPS.",
+      "jellyfinUrlInvalid": "L’URL Jellyfin ne doit contenir ni identifiants, ni paramètres, ni fragment.",
+      "jellyfinCredentials": "Les identifiants ou la clé API Jellyfin sont invalides.",
+      "jellyfinUnavailable": "Jellyfin est actuellement indisponible.",
+      "invalidMedia": "Cette URL d’image est invalide ou expirée.",
+      "imageNotFound": "L’image est introuvable.",
+      "unsafeImage": "Ce format d’image n’est pas autorisé.",
+      "imageTooLarge": "Cette image est trop volumineuse."
+    }
+  }
+}
