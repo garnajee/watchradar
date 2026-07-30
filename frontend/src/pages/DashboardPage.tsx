@@ -189,7 +189,7 @@ function ActivityShelf({
               {empty}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(92px,112px))] justify-start gap-3">
               {items.map((item) => (
                 <article key={item.id} className="group min-w-0">
                   <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-panel shadow-card">
