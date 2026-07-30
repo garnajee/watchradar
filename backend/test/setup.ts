@@ -1,0 +1,11 @@
+process.env.NODE_ENV = "test";
+process.env.DATABASE_URL = "postgresql://watchradar:test@127.0.0.1:5432/watchradar_test";
+process.env.JWT_SECRET = "a".repeat(64);
+process.env.JWT_REFRESH_SECRET = "b".repeat(64);
+process.env.ENCRYPTION_KEY = "c".repeat(64);
+process.env.FRONTEND_ORIGIN = "https://watchradar.test";
+process.env.COOKIE_SECURE = "true";
+process.env.TRUST_PROXY_HOPS = "2";
+process.env.JELLYFIN_TLS_REJECT_UNAUTHORIZED = "true";
+process.env.JELLYFIN_URL = "https://jellyfin.test";
+process.env.LOG_LEVEL = "silent";

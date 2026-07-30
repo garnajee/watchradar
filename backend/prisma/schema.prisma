@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminConfig {
+  id              Int      @id @default(1)
+  jellyfinUrl     String
+  encryptedApiKey String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model SiteUser {
+  id                 Int                @id @default(autoincrement())
+  jellyfinUserId     String             @unique
+  name               String
+  avatarTag          String?
+  isEnabled          Boolean            @default(false)
+  isAdmin            Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  visibilityGiven    VisibilityMatrix[] @relation("Viewer")
+  visibilityReceived VisibilityMatrix[] @relation("Target")
+  sharingPreference  SharingPreference?
+  sharedItems        SharedItem[]
+  playbackState      PlaybackState?
+  favoritesGiven     UserFavorite[]     @relation("FavoriteViewer")
+  favoritesReceived  UserFavorite[]     @relation("FavoriteTarget")
+  authSessions       AuthSession[]
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  userId    Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      SiteUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model UsedLegacyRefreshToken {
+  tokenHash String   @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model VisibilityMatrix {
+  id       Int      @id @default(autoincrement())
+  viewerId Int
+  targetId Int
+  canView  Boolean  @default(false)
+  viewer   SiteUser @relation("Viewer", fields: [viewerId], references: [id], onDelete: Cascade)
+  target   SiteUser @relation("Target", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([viewerId, targetId])
+  @@index([targetId])
+}
+
+model SharingPreference {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @unique
+  shareMode ShareMode @default(ONLY_WATCHING)
+  user      SiteUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum ShareMode {
+  ALL
+  NONE
+  ONLY_WATCHING
+  SELECTED
+}
+
+model SharedItem {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  jellyfinItemId String
+  itemType       String
+  name           String?
+  imageTag       String?
+  user           SiteUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jellyfinItemId])
+}
+
+model PlaybackState {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  itemId        String?
+  itemName      String?
+  itemType      String?
+  seriesId      String?
+  seriesName    String?
+  seasonNumber  Int?
+  episodeNumber Int?
+  imageTag      String?
+  positionTicks BigInt?
+  runtimeTicks  BigInt?
+  isPlaying     Boolean  @default(false)
+  lastUpdated   DateTime @updatedAt
+  user          SiteUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserFavorite {
+  id       Int      @id @default(autoincrement())
+  viewerId Int
+  targetId Int
+  viewer   SiteUser @relation("FavoriteViewer", fields: [viewerId], references: [id], onDelete: Cascade)
+  target   SiteUser @relation("FavoriteTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([viewerId, targetId])
+  @@index([targetId])
+}

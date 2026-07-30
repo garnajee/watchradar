@@ -1,0 +1,25 @@
+# macOS / IDE
+.DS_Store
+**/.DS_Store
+.idea/
+.vscode/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+certs/
+
+# Dependencies and generated files
+node_modules/
+dist/
+coverage/
+*.log
+*.tsbuildinfo
+
+# Local data and database exports
+*.sql
+!backend/prisma/migrations/**/migration.sql
+*.dump
+*.backup
+postgres_data/
