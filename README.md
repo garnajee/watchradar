@@ -329,10 +329,10 @@ Images:
 - `ghcr.io/garnajee/watchradar-frontend`
 - `ghcr.io/garnajee/watchradar-backend`
 
-GitHub creates new packages as private by default. After the first successful
-workflow run, the repository owner must open each package's **Package
-settings → Change visibility → Public**. Public GHCR images can then be pulled
-anonymously; users do not need a GitHub account or `docker login`.
+Both packages are linked to this public repository and can be pulled
+anonymously: users do not need a GitHub account or `docker login`. If a fork
+publishes private packages instead, its owner must change each package's
+visibility under **Package settings → Change visibility → Public**.
 
 The root [`docker-compose.yml`](docker-compose.yml) intentionally keeps its
 `build` sections for source builds and local development. Production servers
