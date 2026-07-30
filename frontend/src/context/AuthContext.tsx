@@ -14,7 +14,7 @@ import { useI18n } from "./I18nContext";
 type AuthContextValue = {
   user: CurrentUser | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, jellyfinUrl?: string) => Promise<void>;
   logout: () => Promise<void>;
   reload: () => Promise<void>;
   updateLocale: (locale: Locale) => Promise<void>;
@@ -42,10 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [reload]);
 
   const login = useCallback(
-    async (username: string, password: string) => {
+    async (username: string, password: string, jellyfinUrl?: string) => {
       const payload = await apiFetch<{ user: CurrentUser }>("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({
+          username,
+          password,
+          ...(jellyfinUrl ? { jellyfinUrl } : {})
+        })
       });
       setUser(payload.user);
       setLocale(payload.user.locale);

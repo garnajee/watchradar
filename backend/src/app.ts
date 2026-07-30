@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
+import { fileURLToPath } from "node:url";
 import { pinoHttp } from "pino-http";
 import { config } from "./config.js";
 import { ApiError } from "./lib/api-error.js";
@@ -14,6 +15,8 @@ import { authRouter } from "./routes/auth.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { mediaRouter } from "./routes/media.js";
 import { userRouter } from "./routes/user.js";
+
+const frontendDirectory = fileURLToPath(new URL("../public/", import.meta.url));
 
 export function createApp() {
   const app = express();
@@ -35,17 +38,37 @@ export function createApp() {
   );
   app.use(
     helmet({
-      // Nginx is the only browser-facing service and owns these policies.
-      // In particular, the internal HTTP API must not emit HSTS.
-      contentSecurityPolicy: false,
-      crossOriginOpenerPolicy: false,
-      crossOriginResourcePolicy: false,
-      referrerPolicy: false,
+      contentSecurityPolicy: {
+        useDefaults: false,
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+          formAction: ["'self'"],
+          frameAncestors: ["'none'"],
+          imgSrc: ["'self'", "data:"],
+          objectSrc: ["'none'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"]
+        }
+      },
+      crossOriginOpenerPolicy: { policy: "same-origin" },
+      crossOriginResourcePolicy: { policy: "same-origin" },
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+      // HTTPS is terminated by the user's reverse proxy. It may add HSTS for
+      // the public domain without coupling that policy to WatchRadar.
       strictTransportSecurity: false,
-      xContentTypeOptions: false,
-      xFrameOptions: false
+      xFrameOptions: { action: "deny" }
     })
   );
+  app.use((_request, response, next) => {
+    response.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=()"
+    );
+    next();
+  });
   app.use(
     cors({
       origin(origin, callback) {
@@ -86,6 +109,34 @@ export function createApp() {
   app.use("/api/user", userRouter);
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/media", mediaRouter);
+
+  if (config.nodeEnv === "production") {
+    app.use(
+      express.static(frontendDirectory, {
+        dotfiles: "deny",
+        fallthrough: true,
+        index: false,
+        setHeaders(response, filePath) {
+          response.setHeader(
+            "Cache-Control",
+            filePath.includes("/assets/")
+              ? "public, max-age=31536000, immutable"
+              : "no-cache"
+          );
+        }
+      })
+    );
+    app.get("*", (request, response, next) => {
+      if (request.path === "/api" || request.path.startsWith("/api/")) {
+        next();
+        return;
+      }
+      response.setHeader("Cache-Control", "no-cache");
+      response.sendFile("index.html", { root: frontendDirectory }, (error) => {
+        if (error) next(error);
+      });
+    });
+  }
 
   app.use((_request, _response, next) => {
     next(new ApiError(404, "Route introuvable.", "NOT_FOUND"));

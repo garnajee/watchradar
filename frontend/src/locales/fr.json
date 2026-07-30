@@ -51,9 +51,11 @@
   },
   "setup": {
     "checkFailed": "Impossible de vérifier la configuration. WatchRadar risque de ne pas fonctionner.",
-    "missingUrl": "L’URL Jellyfin n’est pas renseignée. Définissez JELLYFIN_URL dans le fichier .env racine puis redémarrez WatchRadar.",
+    "missingUrl": "L’URL Jellyfin n’est pas renseignée. Saisissez-la ci-dessous pour terminer la première connexion.",
     "missingApiKey": "La clé API n’est pas renseignée. Connectez-vous avec un administrateur Jellyfin puis enregistrez-la dans Administration. Le partage ne fonctionnera pas avant.",
-    "incomplete": "La configuration Jellyfin est incomplète. WatchRadar risque de ne pas fonctionner."
+    "incomplete": "La configuration Jellyfin est incomplète. WatchRadar risque de ne pas fonctionner.",
+    "jellyfinUrl": "URL HTTPS de Jellyfin",
+    "jellyfinUrlHelp": "Ce premier compte doit être administrateur Jellyfin. L’URL sera enregistrée après une connexion réussie."
   },
   "dashboard": {
     "today": "Aujourd’hui",

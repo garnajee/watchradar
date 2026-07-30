@@ -10,9 +10,10 @@ const validEnvironment: NodeJS.ProcessEnv = {
   ENCRYPTION_KEY: "c".repeat(64),
   FRONTEND_ORIGIN: "https://watchradar.test",
   COOKIE_SECURE: "true",
-  TRUST_PROXY_HOPS: "2",
+  TRUST_PROXY_HOPS: "1",
   JELLYFIN_TLS_REJECT_UNAUTHORIZED: "true",
   JELLYFIN_URL: "https://jellyfin.test",
+  JELLYFIN_API_KEY: "",
   LOG_LEVEL: "info"
 };
 
@@ -21,8 +22,36 @@ describe("environment configuration", () => {
     expect(parseConfig(validEnvironment)).toMatchObject({
       nodeEnv: "production",
       cookieSecure: true,
-      trustProxyHops: 2
+      trustProxyHops: 1,
+      jellyfinApiKey: ""
     });
+  });
+
+  it("accepts optional Jellyfin bootstrap settings", () => {
+    expect(
+      parseConfig({
+        ...validEnvironment,
+        JELLYFIN_URL: "",
+        JELLYFIN_API_KEY: ""
+      })
+    ).toMatchObject({
+      jellyfinUrl: "",
+      jellyfinApiKey: ""
+    });
+    expect(
+      parseConfig({
+        ...validEnvironment,
+        JELLYFIN_API_KEY: "jellyfin-api-key"
+      })
+    ).toMatchObject({
+      jellyfinApiKey: "jellyfin-api-key"
+    });
+    expect(() =>
+      parseConfig({
+        ...validEnvironment,
+        JELLYFIN_API_KEY: "short"
+      })
+    ).toThrow(/at least 8 character/);
   });
 
   it("requires HTTPS and secure cookies in production", () => {

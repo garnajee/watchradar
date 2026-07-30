@@ -41,7 +41,7 @@ adminRouter.get(
     const stored = await prisma.adminConfig.findUnique({ where: { id: 1 } });
     response.json({
       jellyfinUrl: stored?.jellyfinUrl || config.jellyfinUrl,
-      configured: Boolean(stored?.encryptedApiKey)
+      configured: Boolean(stored?.encryptedApiKey || config.jellyfinApiKey)
     });
   })
 );

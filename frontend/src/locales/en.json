@@ -51,9 +51,11 @@
   },
   "setup": {
     "checkFailed": "The configuration could not be checked. WatchRadar may not work correctly.",
-    "missingUrl": "The Jellyfin URL is missing. Set JELLYFIN_URL in the root .env file, then restart WatchRadar.",
+    "missingUrl": "The Jellyfin URL is missing. Enter it below to complete the first sign-in.",
     "missingApiKey": "The API key is missing. Sign in with a Jellyfin administrator, then save it under Administration. Sharing will not work until then.",
-    "incomplete": "The Jellyfin configuration is incomplete. WatchRadar may not work correctly."
+    "incomplete": "The Jellyfin configuration is incomplete. WatchRadar may not work correctly.",
+    "jellyfinUrl": "Jellyfin HTTPS URL",
+    "jellyfinUrlHelp": "This first account must be a Jellyfin administrator. The URL will be saved after a successful sign-in."
   },
   "dashboard": {
     "today": "Today",

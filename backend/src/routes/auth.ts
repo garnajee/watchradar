@@ -3,7 +3,9 @@ import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
+import { appEvents } from "../events.js";
 import { JellyfinClient, normalizeJellyfinUrl } from "../jellyfin/client.js";
+import { invalidateConfiguredJellyfinClient } from "../jellyfin/configured-client.js";
 import { ApiError } from "../lib/api-error.js";
 import { asyncHandler } from "../lib/async-handler.js";
 import { decryptValue } from "../lib/crypto.js";
@@ -20,7 +22,8 @@ import {
 
 const loginSchema = z.object({
   username: z.string().trim().min(1).max(100),
-  password: z.string().min(1).max(500)
+  password: z.string().min(1).max(500),
+  jellyfinUrl: z.string().trim().url().optional()
 });
 
 const cookieBase = {
@@ -67,7 +70,7 @@ authRouter.get(
   asyncHandler(async (_request, response) => {
     const stored = await prisma.adminConfig.findUnique({ where: { id: 1 } });
     const jellyfinUrlConfigured = Boolean(stored?.jellyfinUrl || config.jellyfinUrl);
-    let apiKeyConfigured = false;
+    let apiKeyConfigured = Boolean(config.jellyfinApiKey);
     if (stored?.encryptedApiKey) {
       try {
         apiKeyConfigured = decryptValue(stored.encryptedApiKey, config.encryptionKey).length > 0;
@@ -100,11 +103,11 @@ authRouter.post(
   asyncHandler(async (request, response) => {
     const body = loginSchema.parse(request.body);
     const storedConfig = await prisma.adminConfig.findUnique({ where: { id: 1 } });
-    const rawUrl = storedConfig?.jellyfinUrl || config.jellyfinUrl;
+    const rawUrl = storedConfig?.jellyfinUrl || config.jellyfinUrl || body.jellyfinUrl;
     if (!rawUrl) {
       throw new ApiError(
         412,
-        "Configuration Jellyfin absente. Renseignez JELLYFIN_URL dans .env puis redémarrez WatchRadar.",
+        "Configuration Jellyfin absente. Renseignez l'URL Jellyfin sur la page de connexion.",
         "SETUP_REQUIRED"
       );
     }
@@ -157,6 +160,8 @@ authRouter.post(
 
     if (!storedConfig && isAdmin) {
       await prisma.adminConfig.create({ data: { id: 1, jellyfinUrl } });
+      invalidateConfiguredJellyfinClient();
+      appEvents.emit("jellyfin:config-changed");
     }
 
     const accessToken = signAccessToken(user.id, user.isAdmin);

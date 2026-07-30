@@ -14,6 +14,7 @@ export function LoginPage() {
   const { user, login } = useAuth();
   const { t } = useI18n();
   const { navigate } = useRouter();
+  const [jellyfinUrl, setJellyfinUrl] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -49,7 +50,7 @@ export function LoginPage() {
     setBusy(true);
     setError("");
     try {
-      await login(username, password);
+      await login(username, password, jellyfinUrl.trim() || undefined);
     } catch (caught) {
       setError(localizedError(caught, t, "errors.loginFailed"));
     } finally {
@@ -93,6 +94,26 @@ export function LoginPage() {
                 </p>
               </div>
             </div>
+          )}
+
+          {configuration?.jellyfinUrlConfigured === false && (
+            <label className="mb-4 block">
+              <span className="mb-2 block text-xs font-medium uppercase tracking-wider text-muted">
+                {t("setup.jellyfinUrl")}
+              </span>
+              <input
+                className="input"
+                type="url"
+                value={jellyfinUrl}
+                onChange={(event) => setJellyfinUrl(event.target.value)}
+                placeholder="https://jellyfin.example.com"
+                autoComplete="url"
+                required
+              />
+              <span className="mt-2 block text-xs leading-relaxed text-muted">
+                {t("setup.jellyfinUrlHelp")}
+              </span>
+            </label>
           )}
 
           <label className="mb-4 block">
@@ -146,7 +167,10 @@ export function LoginPage() {
           <button
             className="button-primary w-full"
             type="submit"
-            disabled={busy || configuration?.jellyfinUrlConfigured === false}
+            disabled={
+              busy ||
+              (configuration?.jellyfinUrlConfigured === false && !jellyfinUrl.trim())
+            }
           >
             <LockKeyhole className="h-4 w-4" />
             {busy ? t("auth.connecting") : t("auth.submit")}

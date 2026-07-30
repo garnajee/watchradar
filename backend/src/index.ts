@@ -17,7 +17,7 @@ async function main(): Promise<void> {
   realtime.start();
 
   server.listen(config.port, "0.0.0.0", () => {
-    logger.info({ port: config.port }, "WatchRadar API listening over HTTP");
+    logger.info({ port: config.port }, "WatchRadar listening over HTTP");
   });
 
   let shuttingDown = false;

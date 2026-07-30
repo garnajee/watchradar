@@ -20,6 +20,10 @@ const jellyfinUrlSchema = z.union([
     .url()
     .refine((value) => new URL(value).protocol === "https:", "must use HTTPS")
 ]);
+const jellyfinApiKeySchema = z.union([
+  z.literal(""),
+  z.string().trim().min(8).max(500)
+]);
 
 const envSchema = z
   .object({
@@ -36,9 +40,10 @@ const envSchema = z
       ),
     FRONTEND_ORIGIN: originSchema,
     COOKIE_SECURE: booleanString,
-    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(2),
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1),
     JELLYFIN_TLS_REJECT_UNAUTHORIZED: booleanString,
     JELLYFIN_URL: jellyfinUrlSchema.optional().default(""),
+    JELLYFIN_API_KEY: jellyfinApiKeySchema.optional().default(""),
     LOG_LEVEL: z
       .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
       .default("info")
@@ -89,6 +94,7 @@ export function parseConfig(environment: NodeJS.ProcessEnv) {
     trustProxyHops: parsed.data.TRUST_PROXY_HOPS,
     jellyfinTlsRejectUnauthorized: parsed.data.JELLYFIN_TLS_REJECT_UNAUTHORIZED,
     jellyfinUrl: parsed.data.JELLYFIN_URL,
+    jellyfinApiKey: parsed.data.JELLYFIN_API_KEY,
     logLevel: parsed.data.LOG_LEVEL
   } as const;
 }

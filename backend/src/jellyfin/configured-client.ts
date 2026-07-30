@@ -10,7 +10,43 @@ type ConfiguredJellyfinClient = {
   apiKey: string;
 };
 
+type StoredJellyfinConfig = {
+  jellyfinUrl: string;
+  encryptedApiKey: string | null;
+} | null;
+
+type JellyfinEnvironment = Pick<
+  typeof config,
+  "encryptionKey" | "jellyfinApiKey" | "jellyfinUrl"
+>;
+
 let configuredClientPromise: Promise<ConfiguredJellyfinClient> | null = null;
+
+export function resolveConfiguredJellyfinValues(
+  stored: StoredJellyfinConfig,
+  environment: JellyfinEnvironment = config
+): { url: string; apiKey: string } {
+  const jellyfinUrl = stored?.jellyfinUrl || environment.jellyfinUrl;
+  if (!jellyfinUrl) {
+    throw new ApiError(412, "La configuration Jellyfin est incomplète.", "SETUP_REQUIRED");
+  }
+  let apiKey = environment.jellyfinApiKey;
+  if (stored?.encryptedApiKey) {
+    try {
+      apiKey = decryptValue(stored.encryptedApiKey, environment.encryptionKey);
+    } catch {
+      throw new ApiError(
+        412,
+        "La clé API Jellyfin ne peut pas être déchiffrée. Enregistrez-la à nouveau.",
+        "SETUP_REQUIRED"
+      );
+    }
+  }
+  if (!apiKey) {
+    throw new ApiError(412, "La configuration Jellyfin est incomplète.", "SETUP_REQUIRED");
+  }
+  return { url: jellyfinUrl, apiKey };
+}
 
 export function invalidateConfiguredJellyfinClient(): void {
   configuredClientPromise = null;
@@ -18,22 +54,10 @@ export function invalidateConfiguredJellyfinClient(): void {
 
 async function loadConfiguredJellyfinClient(): Promise<ConfiguredJellyfinClient> {
   const stored = await prisma.adminConfig.findUnique({ where: { id: 1 } });
-  if (!stored?.encryptedApiKey) {
-    throw new ApiError(412, "La configuration Jellyfin est incomplète.", "SETUP_REQUIRED");
-  }
-  let apiKey: string;
-  try {
-    apiKey = decryptValue(stored.encryptedApiKey, config.encryptionKey);
-  } catch {
-    throw new ApiError(
-      412,
-      "La clé API Jellyfin ne peut pas être déchiffrée. Enregistrez-la à nouveau.",
-      "SETUP_REQUIRED"
-    );
-  }
+  const { url, apiKey } = resolveConfiguredJellyfinValues(stored);
   return {
-    client: new JellyfinClient(stored.jellyfinUrl, apiKey, config.jellyfinTlsRejectUnauthorized),
-    url: stored.jellyfinUrl,
+    client: new JellyfinClient(url, apiKey, config.jellyfinTlsRejectUnauthorized),
+    url,
     apiKey
   };
 }
