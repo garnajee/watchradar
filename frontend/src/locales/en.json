@@ -7,7 +7,6 @@
     "jellyfinCircle": "Jellyfin circle",
     "loading": "WatchRadar is syncing…",
     "save": "Save",
-    "refresh": "Refresh",
     "search": "Search…",
     "movie": "Movie",
     "series": "Series",
@@ -84,7 +83,9 @@
     "resumeTitle": "Continue watching",
     "resumeEmpty": "No interrupted playback to resume.",
     "historyTitle": "Watch history",
-    "historyEmpty": "No shared history yet."
+    "historyEmpty": "No shared history yet.",
+    "expandSection": "Expand {{title}}",
+    "collapseSection": "Collapse {{title}}"
   },
   "settings": {
     "eyebrow": "Privacy",
@@ -158,7 +159,6 @@
     "loginFailed": "Unable to sign in.",
     "loadFailed": "Unable to load data.",
     "activityUnavailable": "Activity is unavailable.",
-    "refreshFailed": "Unable to refresh.",
     "catalogUnavailable": "The library is unavailable.",
     "saveFailed": "Unable to save.",
     "updateFailed": "Unable to update.",

@@ -7,7 +7,6 @@
     "jellyfinCircle": "Cercle Jellyfin",
     "loading": "WatchRadar se synchronise…",
     "save": "Enregistrer",
-    "refresh": "Actualiser",
     "search": "Rechercher…",
     "movie": "Film",
     "series": "Série",
@@ -84,7 +83,9 @@
     "resumeTitle": "À reprendre",
     "resumeEmpty": "Aucune lecture interrompue à reprendre.",
     "historyTitle": "Historique de lecture",
-    "historyEmpty": "Aucun historique partagé pour le moment."
+    "historyEmpty": "Aucun historique partagé pour le moment.",
+    "expandSection": "Développer la section {{title}}",
+    "collapseSection": "Réduire la section {{title}}"
   },
   "settings": {
     "eyebrow": "Confidentialité",
@@ -158,7 +159,6 @@
     "loginFailed": "Connexion impossible.",
     "loadFailed": "Chargement impossible.",
     "activityUnavailable": "Activité indisponible.",
-    "refreshFailed": "Actualisation impossible.",
     "catalogUnavailable": "Catalogue indisponible.",
     "saveFailed": "Enregistrement impossible.",
     "updateFailed": "Modification impossible.",

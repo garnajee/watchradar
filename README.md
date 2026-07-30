@@ -8,6 +8,7 @@ history while respecting each person's sharing preferences.
 
 - Sign in with a Jellyfin account
 - Live activity, progress, watch history, and Next up
+- Collapsible activity shelves with locally remembered preferences
 - Favorites and a responsive interface
 - English and French user interfaces
 - Per-user sharing modes: `ALL`, `ONLY_WATCHING`, `SELECTED`, or `NONE`

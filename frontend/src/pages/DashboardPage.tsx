@@ -1,13 +1,14 @@
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   EyeOff,
   Heart,
   History,
   ListVideo,
   Play,
   Radio,
-  RefreshCw,
   RotateCcw,
   Users
 } from "lucide-react";
@@ -19,6 +20,27 @@ import { API_URL, apiFetch } from "../lib/api";
 import { localizedError } from "../lib/error-message";
 import { formatDuration, formatEpisode } from "../lib/format";
 import type { ActivityItem, DashboardUser, UserActivity } from "../types";
+
+type ActivityShelfKind = "nextUp" | "resume" | "history";
+
+function storedShelfState(kind: ActivityShelfKind): boolean {
+  try {
+    return window.localStorage.getItem(`watchradar.shelf.${kind}`) === "collapsed";
+  } catch {
+    return false;
+  }
+}
+
+function storeShelfState(kind: ActivityShelfKind, collapsed: boolean): void {
+  try {
+    window.localStorage.setItem(
+      `watchradar.shelf.${kind}`,
+      collapsed ? "collapsed" : "expanded"
+    );
+  } catch {
+    // Collapsing still works for the current visit when storage is unavailable.
+  }
+}
 
 function LiveCard({ user }: { user: DashboardUser }) {
   const { t } = useI18n();
@@ -106,9 +128,11 @@ function ActivityShelf({
   title: string;
   items: ActivityItem[];
   empty: string;
-  kind: "nextUp" | "resume" | "history";
+  kind: ActivityShelfKind;
 }) {
   const { locale, t } = useI18n();
+  const [collapsed, setCollapsed] = useState(() => storedShelfState(kind));
+  const contentId = `activity-shelf-${kind}`;
   const episodeUnits = {
     season: t("common.units.season"),
     episode: t("common.units.episode")
@@ -119,12 +143,35 @@ function ActivityShelf({
     history: History
   }[kind];
   const SectionIcon = sectionIcon;
+  const ToggleIcon = collapsed ? ChevronDown : ChevronUp;
+
+  function toggleCollapsed() {
+    setCollapsed((current) => {
+      const next = !current;
+      storeShelfState(kind, next);
+      return next;
+    });
+  }
+
   return (
     <section className="mt-8">
-      <div className="mb-4 flex items-end justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-          <SectionIcon className="h-5 w-5 text-cyan" />
-          {title}
+      <div className={`flex items-center justify-between gap-4 ${collapsed ? "" : "mb-4"}`}>
+        <h2 className="min-w-0 text-lg font-semibold text-white">
+          <button
+            type="button"
+            className="-ml-2 flex min-w-0 items-center gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet"
+            aria-expanded={!collapsed}
+            aria-controls={contentId}
+            aria-label={t(
+              collapsed ? "dashboard.expandSection" : "dashboard.collapseSection",
+              { title }
+            )}
+            onClick={toggleCollapsed}
+          >
+            <SectionIcon className="h-5 w-5 shrink-0 text-cyan" />
+            <span className="truncate">{title}</span>
+            <ToggleIcon aria-hidden="true" className="h-4 w-4 shrink-0 text-muted" />
+          </button>
         </h2>
         <span className="text-xs text-muted">
           {t(
@@ -135,70 +182,73 @@ function ActivityShelf({
           )}
         </span>
       </div>
-      {items.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-white/10 px-6 py-9 text-center text-sm text-muted">
-          {empty}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
-          {items.map((item) => (
-            <article key={item.id} className="group min-w-0">
-              <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-panel shadow-card">
-                <MediaImage
-                  src={item.imageUrl}
-                  alt={item.name}
-                  className="h-full w-full transition duration-500 group-hover:scale-105"
-                />
-                {item.progress > 0 && (
-                  <div className="absolute inset-x-2 bottom-2 h-1 overflow-hidden rounded bg-black/50">
-                    <div
-                      className="h-full bg-cyan"
-                      style={{ width: `${Math.min(100, item.progress)}%` }}
+      <div id={contentId} hidden={collapsed}>
+        {!collapsed &&
+          (items.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-white/10 px-6 py-9 text-center text-sm text-muted">
+              {empty}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+              {items.map((item) => (
+                <article key={item.id} className="group min-w-0">
+                  <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-panel shadow-card">
+                    <MediaImage
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="h-full w-full transition duration-500 group-hover:scale-105"
                     />
-                  </div>
-                )}
-                {item.seriesName &&
-                  (item.seasonNumber !== null || item.episodeNumber !== null) && (
-                    <span className="absolute bottom-3 left-3 rounded-lg bg-black/75 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur">
-                      {formatEpisode(
-                        item.seasonNumber,
-                        item.episodeNumber,
-                        episodeUnits
+                    {item.progress > 0 && (
+                      <div className="absolute inset-x-2 bottom-2 h-1 overflow-hidden rounded bg-black/50">
+                        <div
+                          className="h-full bg-cyan"
+                          style={{ width: `${Math.min(100, item.progress)}%` }}
+                        />
+                      </div>
+                    )}
+                    {item.seriesName &&
+                      (item.seasonNumber !== null || item.episodeNumber !== null) && (
+                        <span className="absolute bottom-3 left-3 rounded-lg bg-black/75 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                          {formatEpisode(
+                            item.seasonNumber,
+                            item.episodeNumber,
+                            episodeUnits
+                          )}
+                        </span>
                       )}
-                    </span>
-                  )}
-              </div>
-              <h3 className="mt-3 truncate text-sm font-medium text-white">
-                {item.seriesName ?? item.name}
-              </h3>
-              <p className="mt-1 line-clamp-2 min-h-8 text-xs leading-relaxed text-muted">
-                {item.seriesName
-                  ? `${formatEpisode(
-                      item.seasonNumber,
-                      item.episodeNumber,
-                      episodeUnits
-                    )} · ${item.name}`
-                  : kind === "resume" && item.progress > 0
-                    ? t("dashboard.movieProgress", {
-                        percent: Math.round(item.progress)
-                      })
-                    : kind === "history" && item.lastPlayedDate
-                      ? t("dashboard.watchedOn", {
-                          date: new Date(item.lastPlayedDate).toLocaleDateString(
-                            locale === "fr" ? "fr-FR" : "en-US",
-                            {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric"
-                            }
-                          )
-                        })
-                      : t("common.movie")}
-              </p>
-            </article>
+                  </div>
+                  <h3 className="mt-3 truncate text-sm font-medium text-white">
+                    {item.seriesName ?? item.name}
+                  </h3>
+                  <p className="mt-1 line-clamp-2 min-h-8 text-xs leading-relaxed text-muted">
+                    {item.seriesName
+                      ? `${formatEpisode(
+                          item.seasonNumber,
+                          item.episodeNumber,
+                          episodeUnits
+                        )} · ${item.name}`
+                      : kind === "resume" && item.progress > 0
+                        ? t("dashboard.movieProgress", {
+                            percent: Math.round(item.progress)
+                          })
+                        : kind === "history" && item.lastPlayedDate
+                          ? t("dashboard.watchedOn", {
+                              date: new Date(item.lastPlayedDate).toLocaleDateString(
+                                locale === "fr" ? "fr-FR" : "en-US",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric"
+                                }
+                              )
+                            })
+                          : t("common.movie")}
+                  </p>
+                </article>
+              ))}
+            </div>
           ))}
-        </div>
-      )}
+      </div>
     </section>
   );
 }
@@ -211,9 +261,14 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const touchStart = useRef<number | null>(null);
+  const selectedIdRef = useRef<number | null>(null);
+  const playbackItemByUser = useRef(new Map<number, string | null>());
 
   const loadUsers = useCallback(async () => {
     const payload = await apiFetch<{ users: DashboardUser[] }>("/dashboard/users");
+    playbackItemByUser.current = new Map(
+      payload.users.map((user) => [user.id, user.playback?.itemId ?? null])
+    );
     setUsers(payload.users);
     setSelectedId((current) =>
       current && payload.users.some((user) => user.id === current)
@@ -222,15 +277,9 @@ export function DashboardPage() {
     );
   }, []);
 
-  const refreshDashboard = useCallback(async () => {
-    setError("");
-    await Promise.all([
-      loadUsers(),
-      selectedId
-        ? apiFetch<UserActivity>(`/dashboard/users/${selectedId}/activity`).then(setActivity)
-        : Promise.resolve()
-    ]);
-  }, [loadUsers, selectedId]);
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   useEffect(() => {
     void loadUsers()
@@ -249,7 +298,13 @@ export function DashboardPage() {
       signal: controller.signal
     })
       .then((payload) => {
-        if (!controller.signal.aborted && payload.user.id === selectedId) setActivity(payload);
+        if (!controller.signal.aborted && payload.user.id === selectedId) {
+          playbackItemByUser.current.set(
+            payload.user.id,
+            payload.user.playback?.itemId ?? null
+          );
+          setActivity(payload);
+        }
       })
       .catch((caught) => {
         if (!controller.signal.aborted) {
@@ -265,13 +320,30 @@ export function DashboardPage() {
     let reconnecting = false;
     let retryDelay = 2_000;
     let stopped = false;
+    let activityRefreshTimer: number | null = null;
+    const scheduleActivityRefresh = (targetId: number) => {
+      if (targetId !== selectedIdRef.current) return;
+      if (activityRefreshTimer !== null) window.clearTimeout(activityRefreshTimer);
+      activityRefreshTimer = window.setTimeout(() => {
+        activityRefreshTimer = null;
+        void apiFetch<UserActivity>(`/dashboard/users/${targetId}/activity`)
+          .then((payload) => {
+            if (!stopped && targetId === selectedIdRef.current) setActivity(payload);
+          })
+          .catch(() => undefined);
+      }, 1_000);
+    };
     const onPlayback = (event: MessageEvent<string>) => {
       try {
         const updated = JSON.parse(event.data) as DashboardUser;
+        const previousItemId = playbackItemByUser.current.get(updated.id) ?? null;
+        const nextItemId = updated.playback?.itemId ?? null;
+        playbackItemByUser.current.set(updated.id, nextItemId);
         setUsers((current) => current.map((user) => (user.id === updated.id ? updated : user)));
         setActivity((current) =>
           current?.user.id === updated.id ? { ...current, user: updated } : current
         );
+        if (previousItemId !== nextItemId) scheduleActivityRefresh(updated.id);
       } catch {
         // Ignore a malformed event and keep the stream alive.
       }
@@ -309,6 +381,7 @@ export function DashboardPage() {
       reconnecting = false;
       source?.close();
       if (retryTimer !== null) window.clearTimeout(retryTimer);
+      if (activityRefreshTimer !== null) window.clearTimeout(activityRefreshTimer);
     };
   }, []);
 
@@ -352,7 +425,7 @@ export function DashboardPage() {
         touchStart.current = null;
       }}
     >
-      <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div className="mb-7">
         <div>
           <p className="eyebrow">{t("dashboard.today")}</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
@@ -360,18 +433,6 @@ export function DashboardPage() {
           </h1>
           <p className="mt-2 text-sm text-muted">{t("dashboard.subtitle")}</p>
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            void refreshDashboard().catch((caught) =>
-              setError(localizedError(caught, t, "errors.refreshFailed"))
-            )
-          }
-          className="button-secondary self-start sm:self-auto"
-        >
-          <RefreshCw className="h-4 w-4" />
-          {t("common.refresh")}
-        </button>
       </div>
 
       {error && (
