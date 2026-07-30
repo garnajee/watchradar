@@ -18,8 +18,9 @@ These instructions apply to the entire repository.
 - Preserve the two-part privacy check: an administrator's visibility matrix grants the relationship, and the target user's sharing preference limits the content.
 - Terminate public HTTPS at the user-managed reverse proxy. The combined
   WatchRadar image serves the React app, `/api`, and SSE from Express.
-- Keep `docker-compose.yml` build-based for local/source deployments and
-  `docker-compose.prod.yml` image-based for no-clone production deployments.
+- Keep `docker-compose.yml` image-based as the canonical no-clone production
+  deployment, `docker-compose.dev.yml` build-based for source development, and
+  `docker-compose.prod.yml` synchronized as a backward-compatible copy.
 - Keep secure-cookie and proxy-hop settings aligned with the single public
   reverse proxy in front of WatchRadar.
 - Validate request bodies at API boundaries with Zod.
@@ -40,6 +41,7 @@ npm run typecheck
 npm test
 npm run build
 docker compose config
+docker compose -f docker-compose.dev.yml config
 docker compose -f docker-compose.prod.yml config
 ```
 

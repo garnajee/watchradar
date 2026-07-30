@@ -13,6 +13,8 @@ services:
       POSTGRES_DB: watchradar
       POSTGRES_USER: watchradar
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -32,10 +34,10 @@ services:
     logging: *default-logging
 
   watchradar:
-    image: ghcr.io/garnajee/watchradar:${WATCHRADAR_VERSION:-latest}
-    pull_policy: always
+    build:
+      context: .
     environment:
-      DATABASE_URL: postgresql://watchradar:${DB_PASSWORD}@db:5432/watchradar
+      DATABASE_URL: postgresql://watchradar:${DB_PASSWORD_URLENCODED:-${DB_PASSWORD}}@db:5432/watchradar
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY must be set}

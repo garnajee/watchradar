@@ -90,7 +90,7 @@ mkdir watchradar
 cd watchradar
 
 curl -fsSL \
-  https://raw.githubusercontent.com/garnajee/watchradar/main/docker-compose.prod.yml \
+  https://raw.githubusercontent.com/garnajee/watchradar/main/docker-compose.yml \
   -o docker-compose.yml
 
 curl -fsSL \
@@ -228,7 +228,7 @@ from `main`. To update:
 ```bash
 cd watchradar
 curl -fsSL \
-  https://raw.githubusercontent.com/garnajee/watchradar/main/docker-compose.prod.yml \
+  https://raw.githubusercontent.com/garnajee/watchradar/main/docker-compose.yml \
   -o docker-compose.yml
 docker compose pull
 docker compose up -d --remove-orphans
@@ -364,10 +364,14 @@ users do not need a GitHub account or `docker login`. If a fork publishes a
 private package instead, its owner must change its visibility under **Package
 settings → Change visibility → Public**.
 
-The root [`docker-compose.yml`](docker-compose.yml) builds the same combined
-image from source and is also used to start PostgreSQL during local
-development. Production servers should use
-[`docker-compose.prod.yml`](docker-compose.prod.yml).
+The root [`docker-compose.yml`](docker-compose.yml) is the canonical server
+deployment and pulls the published image. The
+[`docker-compose.dev.yml`](docker-compose.dev.yml) file builds the same image
+from source and exposes PostgreSQL locally for development.
+
+[`docker-compose.prod.yml`](docker-compose.prod.yml) remains an identical
+compatibility copy for installations that downloaded the earlier production
+filename.
 
 ## Local development
 
@@ -385,7 +389,7 @@ Edit the root `.env`, keeping `DB_PASSWORD`, `DB_PASSWORD_URLENCODED`, and
 
 ```bash
 npm install
-docker compose up -d db
+docker compose -f docker-compose.dev.yml up -d db
 npm run db:generate
 npm run dev
 ```
@@ -403,6 +407,7 @@ npm run typecheck
 npm test
 npm run build
 docker compose config
+docker compose -f docker-compose.dev.yml config
 docker compose -f docker-compose.prod.yml config
 ```
 

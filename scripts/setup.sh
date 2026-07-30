@@ -10,6 +10,7 @@ set -Eeuo pipefail
 script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 project_dir=$(dirname "$script_dir")
 env_file="$project_dir/.env"
+development_compose_file="$project_dir/docker-compose.dev.yml"
 
 public_url=""
 jellyfin_url=""
@@ -31,7 +32,7 @@ Options:
   --jellyfin-url URL     Optional HTTPS URL reachable from the WatchRadar container
   --bind-address ADDRESS IPv4 address used for the HTTP port (default: 0.0.0.0)
   --port PORT            HTTP port exposed to the reverse proxy (default: 8080)
-  --start                Build and start the Docker Compose stack
+  --start                Build and start the source-based Docker Compose stack
   --non-interactive      Never prompt; fail when a required value is unavailable
   -h, --help             Show this help
 
@@ -456,7 +457,8 @@ fi
 if [[ "$docker_compose_available" == true ]]; then
   (
     cd "$project_dir"
-    "${compose_command[@]}" --env-file "$working_file" config --quiet
+    "${compose_command[@]}" --env-file "$working_file" \
+      --file "$development_compose_file" config --quiet
   ) || die "Docker Compose rejected the generated configuration"
 elif [[ "$start_stack" == true ]]; then
   die "Docker Compose is required with --start"
@@ -482,8 +484,8 @@ if [[ "$start_stack" == true ]]; then
   [[ "$docker_compose_available" == true ]] || die "Docker Compose is required to start WatchRadar"
   (
     cd "$project_dir"
-    "${compose_command[@]}" up -d --build
-    "${compose_command[@]}" ps
+    "${compose_command[@]}" --file "$development_compose_file" up -d --build
+    "${compose_command[@]}" --file "$development_compose_file" ps
   )
 fi
 
