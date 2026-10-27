@@ -11,6 +11,12 @@ import type {
 
 const clientAuthorization =
   'MediaBrowser Client="WatchRadar", Device="Server", DeviceId="watchradar-backend", Version="1.0.0"';
+
+export function jellyfinAuthorizationHeader(token?: string): string {
+  const trimmedToken = token?.trim();
+  return trimmedToken ? `${clientAuthorization}, Token="${trimmedToken}"` : clientAuthorization;
+}
+
 const REQUEST_TIMEOUT_MS = 15_000;
 const IMAGE_TIMEOUT_MS = 30_000;
 const MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
@@ -76,16 +82,13 @@ export class JellyfinClient {
     path: string,
     options: { method?: string; body?: unknown; token?: string } = {}
   ): Promise<T> {
+    const token = options.token ?? this.apiKey;
     const headers: Record<string, string> = {
       Accept: "application/json",
-      Authorization: clientAuthorization
+      Authorization: jellyfinAuthorizationHeader(token)
     };
     if (options.body !== undefined) {
       headers["Content-Type"] = "application/json";
-    }
-    const token = options.token ?? this.apiKey;
-    if (token) {
-      headers["X-Emby-Token"] = token;
     }
 
     const response = await fetch(`${this.baseUrl}${path}`, {
@@ -207,8 +210,7 @@ export class JellyfinClient {
   private async getBinary(path: string): Promise<RemoteImage> {
     const response = await request(`${this.baseUrl}${path}`, {
       headers: {
-        Authorization: clientAuthorization,
-        ...(this.apiKey ? { "X-Emby-Token": this.apiKey } : {})
+        Authorization: jellyfinAuthorizationHeader(this.apiKey)
       },
       dispatcher: this.dispatcher,
       signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS)

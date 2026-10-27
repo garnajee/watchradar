@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeJellyfinUrl } from "./client.js";
+import { jellyfinAuthorizationHeader, normalizeJellyfinUrl } from "./client.js";
 
 describe("Jellyfin URL normalization", () => {
   it("accepts HTTPS URLs and removes the final slash", () => {
@@ -19,5 +19,19 @@ describe("Jellyfin URL normalization", () => {
   it("rejects query strings and fragments", () => {
     expect(() => normalizeJellyfinUrl("https://example.com?redirect=other")).toThrow();
     expect(() => normalizeJellyfinUrl("https://example.com/#fragment")).toThrow();
+  });
+});
+
+describe("Jellyfin authorization header", () => {
+  it("sends the API key in the MediaBrowser Authorization header", () => {
+    const header = jellyfinAuthorizationHeader("0123456789abcdef0123456789abcdef");
+
+    expect(header).toContain('Client="WatchRadar"');
+    expect(header).toContain('Token="0123456789abcdef0123456789abcdef"');
+  });
+
+  it("omits the token when none is configured", () => {
+    expect(jellyfinAuthorizationHeader()).not.toContain("Token=");
+    expect(jellyfinAuthorizationHeader("   ")).not.toContain("Token=");
   });
 });
